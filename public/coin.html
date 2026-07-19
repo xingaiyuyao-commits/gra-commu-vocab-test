@@ -193,10 +193,14 @@
     <div class="card">
       <label for="name-input">ニックネーム</label>
       <input id="name-input" placeholder="例: たろう" maxlength="12" />
-      <button id="btn-create">ルームを作成</button>
-      <label for="code-input" style="margin-top:20px">ルームコードで参加</label>
-      <input id="code-input" placeholder="例: AB3K" maxlength="4" />
-      <button id="btn-join" class="secondary">参加する</button>
+      <div id="create-section">
+        <button id="btn-create">ルームを作成</button>
+      </div>
+      <div id="join-section">
+        <label for="code-input" style="margin-top:20px">ルームコードで参加</label>
+        <input id="code-input" placeholder="例: AB3K" maxlength="4" />
+        <button id="btn-join" class="secondary">参加する</button>
+      </div>
       <p id="entry-error" class="error"></p>
       <button class="leave-link" onclick="location.href='/'">← ゲーム選択に戻る</button>
     </div>
@@ -290,6 +294,16 @@ function show(screenId) {
 function leaveRoom(needConfirm) {
   if (needConfirm && !confirm("ゲームの途中ですが退出しますか？")) return;
   location.href = "/"; // ページを離れると自動で切断され、サーバー側が退出処理する
+}
+
+// ホームのボタンに応じて「参加」または「作成」だけを表示する
+const mode = new URLSearchParams(location.search).get("mode");
+if (mode === "create") {
+  $("join-section").style.display = "none";
+} else if (mode === "join") {
+  $("create-section").style.display = "none";
+  $("code-input").parentElement.querySelector("label").style.marginTop = "0";
+  $("btn-join").classList.remove("secondary");
 }
 
 // --- 入口 ---
