@@ -269,14 +269,18 @@ function orderStartRound(roomCode) {
   room.roundActive = true;
   room.deadline = Date.now() + ROUND_TIME_MS;
 
+  room.boards = { red: [], blue: [] };
   for (const team of ["red", "blue"]) {
     const members = orderTeamMembers(room, team);
     members.forEach(([, p]) => { p.hand = []; p.frozenUntil = 0; });
     shuffle(sentence.words).forEach((word, i) => {
-      members[i % members.length][1].hand.push(word);
+      const [id, p] = members[i % members.length];
+      p.hand.push(word);
+      room.boards[team].push({ word, holderId: id, holderName: p.name });
     });
     members.forEach(([id, p]) => {
       io.to(id).emit("order:roundStart", {
+        board: room.boards[team],
         round: room.round,
         totalRounds: ORDER_ROUNDS,
         ja: sentence.ja,
@@ -401,6 +405,8 @@ io.on("connection", (socket) => {
       player.hand.splice(idx, 1);
       player.placed++;
       room.progress[team]++;
+      const bi = room.boards[team].findIndex((b) => b.word === word);
+      if (bi !== -1) room.boards[team].splice(bi, 1);
       socket.emit("order:placeOk", { word });
       const placedWords = sentence.words.slice(0, room.progress[team]);
       for (const [id, p] of Object.entries(room.players)) {
@@ -448,9 +454,15 @@ io.on("connection", (socket) => {
       // 抜けた人の持ち札を残ったチームメイトに配り直す
       if (room.roundActive && leaving.hand.length > 0) {
         leaving.hand.forEach((word, i) => {
-          members[i % members.length][1].hand.push(word);
+          const [nid, np] = members[i % members.length];
+          np.hand.push(word);
+          const entry = room.boards[leaving.team].find((b) => b.word === word);
+          if (entry) { entry.holderId = nid; entry.holderName = np.name; }
         });
-        members.forEach(([id, p]) => io.to(id).emit("order:handUpdate", { hand: p.hand }));
+        members.forEach(([id, p]) => io.to(id).emit("order:handUpdate", {
+          hand: p.hand,
+          board: room.boards[leaving.team],
+        }));
       }
     }
     io.to(roomCode).emit("order:playersUpdate", {

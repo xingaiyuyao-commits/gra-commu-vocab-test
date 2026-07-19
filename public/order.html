@@ -120,13 +120,20 @@
   .opp-bar { height: 8px; background: var(--secondary); border-radius: 9999px; overflow: hidden; }
   .opp-bar-fill { height: 100%; width: 0%; border-radius: 9999px; transition: width .3s; }
   .hand-title { font-size: .8rem; font-weight: 600; color: var(--muted-foreground); margin-bottom: 8px; }
-  .hand { display: flex; flex-wrap: wrap; gap: 8px; min-height: 2.6rem; }
-  .hand button {
-    width: auto; padding: 0 16px;
+  .hand { display: flex; flex-wrap: wrap; gap: 8px; min-height: 2.6rem; align-items: flex-start; }
+  .chip {
+    width: auto; height: auto; padding: 8px 14px;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 1rem;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
   }
-  .hand.frozen button { opacity: .4; pointer-events: none; }
+  .chip .holder { font-size: .65rem; font-family: inherit; opacity: .8; }
+  .chip.other {
+    background: var(--secondary); color: var(--muted-foreground);
+    border: 1px solid var(--border); box-shadow: none;
+    cursor: default; pointer-events: none;
+  }
+  .hand.frozen .chip.mine { opacity: .4; pointer-events: none; }
   .freeze-note { text-align: center; color: var(--destructive); font-weight: 700; min-height: 1.4em; margin-top: 10px; font-size: .9rem; }
   .ticker { text-align: center; color: var(--muted-foreground); font-size: .85rem; margin-top: 6px; min-height: 1.3em; }
 
@@ -196,7 +203,7 @@
         <p class="opp-label">相手チームの進み具合: <span id="opp-count">0</span> / <span id="opp-total">0</span></p>
         <div class="opp-bar"><div id="opp-fill" class="opp-bar-fill"></div></div>
       </div>
-      <p class="hand-title">あなたの単語（タップで置く）</p>
+      <p class="hand-title">チームの単語 — 自分の単語だけタップで置ける。仲間の単語は名前入りで見えるので助言しよう！</p>
       <div id="hand" class="hand"></div>
       <p id="freeze-note" class="freeze-note"></p>
       <p id="ticker" class="ticker"></p>
@@ -236,7 +243,7 @@ const socket = io();
 const $ = (id) => document.getElementById(id);
 let isHost = false;
 let myTeam = null;
-let hand = [];
+let board = []; // チーム全員の単語 [{word, holderId, holderName}]
 let wordCount = 0;
 let placedWords = [];
 let deadline = 0;
@@ -298,7 +305,7 @@ function renderTimer() {
 socket.on("order:roundStart", (r) => {
   show("screen-game");
   myTeam = r.yourTeam;
-  hand = r.hand;
+  board = r.board;
   wordCount = r.wordCount;
   placedWords = [];
   deadline = r.deadline;
@@ -329,11 +336,20 @@ function renderSlots() {
   $("slots").innerHTML = slots.join("");
 }
 function renderHand() {
-  $("hand").innerHTML = hand
-    .map((w, i) => `<button data-i="${i}">${esc(w)}</button>`)
-    .join("") || `<p class="waiting-note">持ち札はすべて置きました！仲間を応援しよう 📣</p>`;
-  $("hand").querySelectorAll("button").forEach((b) => {
-    b.onclick = () => socket.emit("order:place", { word: hand[Number(b.dataset.i)] });
+  if (board.length === 0) {
+    $("hand").innerHTML = `<p class="waiting-note">全部置けた！🎉</p>`;
+    return;
+  }
+  $("hand").innerHTML = board
+    .map((b, i) => {
+      const mine = b.holderId === socket.id;
+      return mine
+        ? `<button class="chip mine" data-i="${i}">${esc(b.word)}<span class="holder">あなた</span></button>`
+        : `<button class="chip other" tabindex="-1">${esc(b.word)}<span class="holder">${esc(b.holderName)}</span></button>`;
+    })
+    .join("");
+  $("hand").querySelectorAll(".chip.mine").forEach((btn) => {
+    btn.onclick = () => socket.emit("order:place", { word: board[Number(btn.dataset.i)].word });
   });
 }
 function renderOpp(count) {
@@ -343,17 +359,16 @@ function renderOpp(count) {
   fill.style.background = myTeam === "red" ? "var(--blue-team)" : "var(--red-team)";
 }
 
-socket.on("order:placeOk", ({ word }) => {
-  const i = hand.indexOf(word);
-  if (i !== -1) hand.splice(i, 1);
-  renderHand();
-});
-
 socket.on("order:progress", ({ team, count, words, by }) => {
   if (team === myTeam) {
     if (words) placedWords = words;
+    // 置かれた単語をチームの単語一覧から取り除く
+    const placed = placedWords[placedWords.length - 1];
+    const bi = board.findIndex((b) => b.word === placed);
+    if (bi !== -1) board.splice(bi, 1);
     renderSlots();
-    if (by) $("ticker").textContent = `${by} が「${placedWords[placedWords.length - 1]}」を置いた！`;
+    renderHand();
+    if (by) $("ticker").textContent = `${by} が「${placed}」を置いた！`;
   } else {
     renderOpp(count);
   }
@@ -380,10 +395,10 @@ socket.on("order:teammateMiss", ({ name }) => {
   $("ticker").textContent = `${name} がミス！ 3秒お休み中…`;
 });
 
-socket.on("order:handUpdate", ({ hand: newHand }) => {
-  hand = newHand;
+socket.on("order:handUpdate", ({ board: newBoard }) => {
+  if (newBoard) board = newBoard;
   renderHand();
-  $("ticker").textContent = "仲間の単語を引き継ぎました";
+  $("ticker").textContent = "退出した仲間の単語を引き継ぎました";
 });
 
 socket.on("order:roundResult", ({ winner, reason, sentence, ja, scores }) => {
