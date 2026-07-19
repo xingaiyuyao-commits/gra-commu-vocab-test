@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { Server } = require("socket.io");
 const QUESTIONS = require("./questions");
+const SENTENCES = require("./sentences");
 
 const HIGHSCORE_FILE = path.join(__dirname, "highscore.json");
 
@@ -217,6 +218,262 @@ io.on("connection", (socket) => {
     io.to(roomCode).emit("playersUpdate", {
       players: publicPlayers(room),
       hostName: room.players[room.host].name,
+    });
+  }
+});
+
+/* ========== 並べ替えバトル（チーム対抗） ========== */
+
+const ORDER_ROUNDS = 5;
+const ROUND_TIME_MS = 60000;
+const FREEZE_MS = 3000;
+const orderRooms = {}; // roomCode -> room state
+
+function makeOrderRoomCode() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return orderRooms[code] ? makeOrderRoomCode() : code;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function orderTeamMembers(room, team) {
+  return Object.entries(room.players).filter(([, p]) => p.team === team);
+}
+
+function orderPublicState(room) {
+  return {
+    scores: room.scores,
+    teams: {
+      red: orderTeamMembers(room, "red").map(([, p]) => p.name),
+      blue: orderTeamMembers(room, "blue").map(([, p]) => p.name),
+    },
+  };
+}
+
+function orderStartRound(roomCode) {
+  const room = orderRooms[roomCode];
+  if (!room || room.phase !== "playing") return;
+  const sentence = room.sentences[room.round];
+  room.progress = { red: 0, blue: 0 };
+  room.roundActive = true;
+  room.deadline = Date.now() + ROUND_TIME_MS;
+
+  for (const team of ["red", "blue"]) {
+    const members = orderTeamMembers(room, team);
+    members.forEach(([, p]) => { p.hand = []; p.frozenUntil = 0; });
+    shuffle(sentence.words).forEach((word, i) => {
+      members[i % members.length][1].hand.push(word);
+    });
+    members.forEach(([id, p]) => {
+      io.to(id).emit("order:roundStart", {
+        round: room.round,
+        totalRounds: ORDER_ROUNDS,
+        ja: sentence.ja,
+        wordCount: sentence.words.length,
+        hand: p.hand,
+        yourTeam: team,
+        deadline: room.deadline,
+        ...orderPublicState(room),
+      });
+    });
+  }
+
+  clearTimeout(room.timer);
+  room.timer = setTimeout(() => orderEndRound(roomCode, "timeout"), ROUND_TIME_MS);
+}
+
+function orderEndRound(roomCode, reason) {
+  const room = orderRooms[roomCode];
+  if (!room || !room.roundActive) return;
+  room.roundActive = false;
+  clearTimeout(room.timer);
+
+  let winner;
+  if (reason === "complete") {
+    winner = room.progress.red >= room.sentences[room.round].words.length ? "red" : "blue";
+  } else {
+    winner =
+      room.progress.red > room.progress.blue ? "red" :
+      room.progress.blue > room.progress.red ? "blue" : "draw";
+  }
+  if (winner !== "draw") room.scores[winner]++;
+
+  const sentence = room.sentences[room.round];
+  io.to(roomCode).emit("order:roundResult", {
+    winner,
+    reason,
+    sentence: sentence.words.join(" "),
+    ja: sentence.ja,
+    round: room.round,
+    totalRounds: ORDER_ROUNDS,
+    ...orderPublicState(room),
+  });
+
+  room.round++;
+  setTimeout(() => {
+    if (!orderRooms[roomCode]) return;
+    if (room.round >= ORDER_ROUNDS) orderEndGame(roomCode, null);
+    else orderStartRound(roomCode);
+  }, 4000);
+}
+
+function orderEndGame(roomCode, forcedWinner) {
+  const room = orderRooms[roomCode];
+  if (!room || room.phase !== "playing") return;
+  room.phase = "finished";
+  clearTimeout(room.timer);
+  const { red, blue } = room.scores;
+  const winner = forcedWinner || (red > blue ? "red" : blue > red ? "blue" : "draw");
+  io.to(roomCode).emit("order:gameOver", {
+    winner,
+    forced: !!forcedWinner,
+    ...orderPublicState(room),
+    contributions: Object.values(room.players)
+      .map((p) => ({ name: p.name, team: p.team, placed: p.placed }))
+      .sort((a, b) => b.placed - a.placed),
+  });
+}
+
+io.on("connection", (socket) => {
+  socket.on("order:createRoom", ({ name }, cb) => {
+    const roomCode = makeOrderRoomCode();
+    orderRooms[roomCode] = {
+      host: socket.id,
+      phase: "lobby",
+      players: {},
+      scores: { red: 0, blue: 0 },
+      sentences: shuffle(SENTENCES).slice(0, ORDER_ROUNDS),
+      round: 0,
+      progress: { red: 0, blue: 0 },
+      roundActive: false,
+    };
+    orderJoin(socket, roomCode, name, cb);
+  });
+
+  socket.on("order:joinRoom", ({ roomCode, name }, cb) => {
+    const code = (roomCode || "").toUpperCase().trim();
+    const room = orderRooms[code];
+    if (!room) return cb({ error: "ルームが見つかりません" });
+    if (room.phase !== "lobby") return cb({ error: "ゲームはすでに開始しています" });
+    orderJoin(socket, code, name, cb);
+  });
+
+  socket.on("order:startGame", () => {
+    const roomCode = socket.data.orderRoomCode;
+    const room = orderRooms[roomCode];
+    if (!room || room.host !== socket.id || room.phase !== "lobby") return;
+    if (Object.keys(room.players).length < 2) {
+      socket.emit("order:error", { message: "2人以上で開始できます" });
+      return;
+    }
+    const ids = shuffle(Object.keys(room.players));
+    ids.forEach((id, i) => { room.players[id].team = i % 2 === 0 ? "red" : "blue"; });
+    room.phase = "playing";
+    orderStartRound(roomCode);
+  });
+
+  socket.on("order:place", ({ word }) => {
+    const roomCode = socket.data.orderRoomCode;
+    const room = orderRooms[roomCode];
+    if (!room || room.phase !== "playing" || !room.roundActive) return;
+    const player = room.players[socket.id];
+    if (!player || Date.now() < player.frozenUntil) return;
+
+    const idx = player.hand.indexOf(word);
+    if (idx === -1) return;
+
+    const team = player.team;
+    const sentence = room.sentences[room.round];
+    const expected = sentence.words[room.progress[team]];
+
+    if (word === expected) {
+      player.hand.splice(idx, 1);
+      player.placed++;
+      room.progress[team]++;
+      socket.emit("order:placeOk", { word });
+      const placedWords = sentence.words.slice(0, room.progress[team]);
+      for (const [id, p] of Object.entries(room.players)) {
+        io.to(id).emit("order:progress", {
+          team,
+          count: room.progress[team],
+          wordCount: sentence.words.length,
+          words: p.team === team ? placedWords : undefined,
+          by: p.team === team ? player.name : undefined,
+        });
+      }
+      if (room.progress[team] >= sentence.words.length) orderEndRound(roomCode, "complete");
+    } else {
+      player.frozenUntil = Date.now() + FREEZE_MS;
+      socket.emit("order:frozen", { until: player.frozenUntil, word });
+      for (const [id, p] of Object.entries(room.players)) {
+        if (p.team === team && id !== socket.id) {
+          io.to(id).emit("order:teammateMiss", { name: player.name });
+        }
+      }
+    }
+  });
+
+  socket.on("disconnect", () => {
+    const roomCode = socket.data.orderRoomCode;
+    const room = orderRooms[roomCode];
+    if (!room) return;
+    const leaving = room.players[socket.id];
+    delete room.players[socket.id];
+
+    if (Object.keys(room.players).length === 0) {
+      clearTimeout(room.timer);
+      delete orderRooms[roomCode];
+      return;
+    }
+    if (room.host === socket.id) room.host = Object.keys(room.players)[0];
+
+    if (room.phase === "playing" && leaving && leaving.team) {
+      const members = orderTeamMembers(room, leaving.team);
+      if (members.length === 0) {
+        // チームが全滅したら相手チームの勝ち
+        orderEndGame(roomCode, leaving.team === "red" ? "blue" : "red");
+        return;
+      }
+      // 抜けた人の持ち札を残ったチームメイトに配り直す
+      if (room.roundActive && leaving.hand.length > 0) {
+        leaving.hand.forEach((word, i) => {
+          members[i % members.length][1].hand.push(word);
+        });
+        members.forEach(([id, p]) => io.to(id).emit("order:handUpdate", { hand: p.hand }));
+      }
+    }
+    io.to(roomCode).emit("order:playersUpdate", {
+      players: Object.values(room.players).map((p) => p.name),
+      hostName: room.players[room.host].name,
+      ...orderPublicState(room),
+    });
+  });
+
+  function orderJoin(sock, roomCode, name, cb) {
+    const room = orderRooms[roomCode];
+    sock.join(roomCode);
+    sock.data.orderRoomCode = roomCode;
+    room.players[sock.id] = {
+      name: (name || "名無し").slice(0, 12),
+      team: null,
+      hand: [],
+      placed: 0,
+      frozenUntil: 0,
+    };
+    cb({ roomCode, isHost: room.host === sock.id });
+    io.to(roomCode).emit("order:playersUpdate", {
+      players: Object.values(room.players).map((p) => p.name),
+      hostName: room.players[room.host].name,
+      ...orderPublicState(room),
     });
   }
 });
