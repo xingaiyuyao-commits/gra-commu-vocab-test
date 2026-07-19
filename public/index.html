@@ -57,6 +57,13 @@
     transition: opacity .15s;
   }
   a.btn:hover { opacity: .9; }
+  a.btn.secondary {
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    margin-top: 8px;
+  }
+  a.btn.secondary:hover { background: var(--accent); opacity: 1; }
 </style>
 </head>
 <body>
@@ -73,6 +80,18 @@
       <p class="game-title"><span class="emoji">🧩</span>並べ替えバトル</p>
       <p class="desc">2チーム対抗の文章並べ替え。配られた自分の単語を正しいタイミングで置いて、相手チームより早く文を完成させよう。</p>
       <a class="btn" href="/order.html">あそぶ</a>
+    </div>
+    <div class="card">
+      <p class="game-title"><span class="emoji">📚</span>単語テスト</p>
+      <p class="desc">B2レベル5問の穴埋めテスト。全員提出後にランキング発表。</p>
+      <a class="btn" href="https://realtime-chat-production-b389.up.railway.app/join/word-quiz">参加する</a>
+      <a class="btn secondary" href="https://realtime-chat-production-b389.up.railway.app/admin/word-quiz">ルームを作成</a>
+    </div>
+    <div class="card">
+      <p class="game-title"><span class="emoji">🔥</span>Survive</p>
+      <p class="desc">30問サバイバル（A2〜C1プリセット）。15秒以内に正解した人だけ生き残る。</p>
+      <a class="btn" href="https://realtime-chat-production-b389.up.railway.app/join/survive">参加する</a>
+      <a class="btn secondary" href="https://realtime-chat-production-b389.up.railway.app/admin/survive">ルームを作成</a>
     </div>
   </div>
 </div>
