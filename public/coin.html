@@ -140,6 +140,13 @@
   .feedback.ok { color: var(--green); }
   .feedback.ng { color: var(--destructive); }
   .waiting-note, .ticker { text-align: center; color: var(--muted-foreground); font-size: .85rem; margin-top: 8px; min-height: 1.3em; }
+  .leave-link {
+    display: block; width: fit-content; margin: 4px auto 16px;
+    background: none; border: none; box-shadow: none;
+    color: var(--muted-foreground); font-size: .85rem;
+    text-decoration: underline; cursor: pointer; height: auto; padding: 4px 8px;
+  }
+  .leave-link:hover { color: var(--destructive); opacity: 1; }
 
   /* 結果画面 */
   .result-coins { text-align: center; font-size: 3rem; font-weight: 700; color: var(--gold-dark); margin: 8px 0; }
@@ -191,6 +198,7 @@
       <input id="code-input" placeholder="例: AB3K" maxlength="4" />
       <button id="btn-join" class="secondary">参加する</button>
       <p id="entry-error" class="error"></p>
+      <button class="leave-link" onclick="location.href='/'">← ゲーム選択に戻る</button>
     </div>
   </div>
 
@@ -211,6 +219,7 @@
         <button id="btn-start">ゲーム開始</button>
       </div>
       <p id="wait-note" class="waiting-note"></p>
+      <button class="leave-link" onclick="leaveRoom(false)">ルームを退出する</button>
     </div>
   </div>
 
@@ -231,6 +240,7 @@
       <p id="feedback" class="feedback"></p>
       <p id="ticker" class="ticker"></p>
     </div>
+    <button class="leave-link" onclick="leaveRoom(true)">ゲームを退出する</button>
   </div>
 
   <!-- 結果 -->
@@ -258,7 +268,8 @@
         <thead><tr><th>プレイヤー</th><th>正解</th><th>ミス</th></tr></thead>
         <tbody id="result-table"></tbody>
       </table>
-      <button onclick="location.reload()" class="secondary" style="margin-top:18px">もう一度あそぶ</button>
+      <button onclick="location.reload()" style="margin-top:18px">もう一度あそぶ</button>
+      <button onclick="location.href='/'" class="secondary">ゲーム選択に戻る</button>
     </div>
   </div>
 </div>
@@ -274,6 +285,11 @@ let timerInterval = null;
 function show(screenId) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(screenId).classList.add("active");
+}
+
+function leaveRoom(needConfirm) {
+  if (needConfirm && !confirm("ゲームの途中ですが退出しますか？")) return;
+  location.href = "/"; // ページを離れると自動で切断され、サーバー側が退出処理する
 }
 
 // --- 入口 ---
@@ -293,10 +309,16 @@ function onJoined(res) {
 }
 
 // --- 待機 ---
-socket.on("playersUpdate", ({ players, hostName }) => {
+socket.on("playersUpdate", ({ players, hostId }) => {
   $("player-list").innerHTML = players
-    .map((p) => `<li>${esc(p.name)}${p.name === hostName ? " 👑" : ""}</li>`)
+    .map((p) => `<li>${esc(p.name)}${p.id === hostId ? " 👑" : ""}</li>`)
     .join("");
+  // ホストが退出したら次の人に開始ボタンを引き継ぐ
+  if (!isHost && hostId === socket.id) {
+    isHost = true;
+    $("host-controls").style.display = "block";
+    $("wait-note").textContent = "あなたが新しいホストになりました";
+  }
 });
 $("btn-start").onclick = () => {
   socket.emit("startGame", { timeLimitSec: Number($("time-select").value) });

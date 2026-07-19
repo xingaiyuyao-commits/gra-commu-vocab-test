@@ -77,6 +77,13 @@
     margin-bottom: 6px; font-size: .9rem;
   }
   .waiting-note { text-align: center; color: var(--muted-foreground); font-size: .85rem; margin-top: 8px; min-height: 1.3em; }
+  .leave-link {
+    display: block; width: fit-content; margin: 4px auto 16px;
+    background: none; border: none; box-shadow: none;
+    color: var(--muted-foreground); font-size: .85rem;
+    text-decoration: underline; cursor: pointer; height: auto; padding: 4px 8px;
+  }
+  .leave-link:hover { color: var(--destructive); opacity: 1; }
 
   /* ゲーム画面 */
   .topbar { display: flex; justify-content: space-between; align-items: center; margin: 8px 2px 12px; }
@@ -154,6 +161,7 @@
       <input id="code-input" placeholder="例: AB3K" maxlength="4" />
       <button id="btn-join" class="secondary">参加する</button>
       <p id="entry-error" class="error"></p>
+      <button class="leave-link" onclick="location.href='/'">← ゲーム選択に戻る</button>
     </div>
   </div>
 
@@ -165,6 +173,7 @@
       <ul id="player-list" class="player-list"></ul>
       <button id="btn-start" style="display:none">ゲーム開始</button>
       <p id="wait-note" class="waiting-note"></p>
+      <button class="leave-link" onclick="leaveRoom(false)">ルームを退出する</button>
     </div>
   </div>
 
@@ -192,6 +201,7 @@
       <p id="freeze-note" class="freeze-note"></p>
       <p id="ticker" class="ticker"></p>
     </div>
+    <button class="leave-link" onclick="leaveRoom(true)">ゲームを退出する</button>
   </div>
 
   <!-- ラウンド結果 -->
@@ -214,7 +224,8 @@
         <thead><tr><th>プレイヤー</th><th>チーム</th><th>置いた数</th></tr></thead>
         <tbody id="contrib-table"></tbody>
       </table>
-      <button onclick="location.reload()" class="secondary" style="margin-top:18px">もう一度あそぶ</button>
+      <button onclick="location.reload()" style="margin-top:18px">もう一度あそぶ</button>
+      <button onclick="location.href='/'" class="secondary">ゲーム選択に戻る</button>
     </div>
   </div>
 </div>
@@ -237,6 +248,11 @@ function show(screenId) {
   $(screenId).classList.add("active");
 }
 
+function leaveRoom(needConfirm) {
+  if (needConfirm && !confirm("ゲームの途中ですが退出しますか？チームの単語は仲間に引き継がれます。")) return;
+  location.href = "/"; // ページを離れると自動で切断され、サーバー側が退出処理する
+}
+
 // --- 入口 ---
 $("btn-create").onclick = () => {
   socket.emit("order:createRoom", { name: $("name-input").value }, onJoined);
@@ -252,10 +268,16 @@ function onJoined(res) {
   $("wait-note").textContent = isHost ? "" : "ホストの開始を待っています…";
   show("screen-wait");
 }
-socket.on("order:playersUpdate", ({ players, hostName }) => {
+socket.on("order:playersUpdate", ({ players, hostName, hostId }) => {
   $("player-list").innerHTML = players
     .map((n) => `<li>${esc(n)}${n === hostName ? " 👑" : ""}</li>`)
     .join("");
+  // ホストが退出したら次の人に開始ボタンを引き継ぐ
+  if (!isHost && hostId === socket.id) {
+    isHost = true;
+    $("btn-start").style.display = "block";
+    $("wait-note").textContent = "あなたが新しいホストになりました";
+  }
 });
 $("btn-start").onclick = () => socket.emit("order:startGame");
 socket.on("order:error", ({ message }) => { $("wait-note").textContent = message; });

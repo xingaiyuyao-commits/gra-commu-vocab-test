@@ -198,6 +198,7 @@ io.on("connection", (socket) => {
     }
     if (room.host === socket.id) room.host = Object.keys(room.players)[0];
     io.to(roomCode).emit("playersUpdate", {
+      hostId: room.host,
       players: publicPlayers(room),
       hostName: room.players[room.host].name,
     });
@@ -216,6 +217,7 @@ io.on("connection", (socket) => {
     };
     cb({ roomCode, isHost: room.host === sock.id });
     io.to(roomCode).emit("playersUpdate", {
+      hostId: room.host,
       players: publicPlayers(room),
       hostName: room.players[room.host].name,
     });
@@ -452,6 +454,7 @@ io.on("connection", (socket) => {
       }
     }
     io.to(roomCode).emit("order:playersUpdate", {
+      hostId: room.host,
       players: Object.values(room.players).map((p) => p.name),
       hostName: room.players[room.host].name,
       ...orderPublicState(room),
@@ -471,6 +474,7 @@ io.on("connection", (socket) => {
     };
     cb({ roomCode, isHost: room.host === sock.id });
     io.to(roomCode).emit("order:playersUpdate", {
+      hostId: room.host,
       players: Object.values(room.players).map((p) => p.name),
       hostName: room.players[room.host].name,
       ...orderPublicState(room),
