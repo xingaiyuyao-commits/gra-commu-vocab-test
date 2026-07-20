@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>📚 単語テスト — シリーズ別5問</title>
+<style>
+  :root {
+    --background: oklch(98.5% .002 247);
+    --foreground: oklch(14.5% .02 265);
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(14.5% .02 265);
+    --primary: oklch(45% .18 265);
+    --primary-foreground: oklch(98.5% .002 247);
+    --secondary: oklch(96% .01 265);
+    --muted-foreground: oklch(50% .02 265);
+    --accent: oklch(94% .02 265);
+    --destructive: oklch(57.7% .245 27.325);
+    --border: oklch(90% .01 265);
+    --green: oklch(62.7% .194 149.214);
+    --gold: oklch(79.5% .184 86.047);
+    --radius: .625rem;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    background: linear-gradient(135deg, var(--background), var(--background) 60%, oklch(45% .18 265 / .05));
+    color: var(--foreground);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { width: 100%; max-width: 42rem; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  h1 { text-align: center; font-size: 1.875rem; font-weight: 700; letter-spacing: -.025em; margin: 24px 0 8px; }
+  .subtitle { text-align: center; color: var(--muted-foreground); font-size: .875rem; margin-bottom: 24px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / .1), 0 1px 2px -1px rgb(0 0 0 / .1);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  label { font-size: .875rem; font-weight: 500; display: block; margin-bottom: 6px; }
+  input, select {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 12px;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--foreground);
+    font-size: .95rem;
+    margin-bottom: 14px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  button {
+    width: 100%;
+    height: 2.75rem;
+    border: none;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: .95rem;
+    font-weight: 500;
+    cursor: pointer;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    transition: opacity .15s, transform .1s;
+  }
+  button:hover { opacity: .9; }
+  button:active { transform: scale(.98); }
+  button.secondary {
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    margin-top: 10px;
+  }
+  button:disabled { opacity: .5; cursor: default; pointer-events: none; }
+  .error { color: var(--destructive); text-align: center; margin-top: 8px; min-height: 1.2em; font-size: .875rem; }
+  .room-code { text-align: center; font-size: 2.25rem; letter-spacing: .3em; font-weight: 700; color: var(--primary); margin: 4px 0 12px; }
+  .player-list { list-style: none; margin: 4px 0 16px; }
+  .player-list li {
+    padding: 10px 14px;
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    margin-bottom: 6px;
+    font-size: .9rem;
+    display: flex;
+    justify-content: space-between;
+  }
+  .leave { background: none; border: none; color: var(--muted-foreground); font-size: .85rem; width: auto; height: auto; margin: 16px auto 0; display: block; text-decoration: underline; cursor: pointer; }
+
+  /* テスト画面 */
+  .progressbar { height: 8px; background: var(--secondary); border-radius: 9999px; overflow: hidden; margin: 8px 0 4px; }
+  .progressbar .fill { height: 100%; background: var(--primary); border-radius: 9999px; transition: width .25s; }
+  .progress-label { display: flex; justify-content: space-between; color: var(--muted-foreground); font-size: .8rem; margin-bottom: 16px; }
+  .q-ja { font-size: 1.05rem; font-weight: 600; text-align: center; margin-bottom: 6px; }
+  .q-hint { text-align: center; color: var(--muted-foreground); font-family: ui-monospace, monospace; letter-spacing: .15em; margin-bottom: 14px; }
+  .q-sentence { font-size: 1.15rem; line-height: 1.7; text-align: center; margin-bottom: 18px; overflow-wrap: break-word; }
+  .q-sentence .blank { font-weight: 700; color: var(--primary); }
+  .answer-input { font-size: 1.1rem; height: 3rem; text-align: center; }
+  .nav-row { display: flex; gap: 10px; margin-top: 4px; }
+  .nav-row button.back { width: 35%; background: var(--card); color: var(--foreground); border: 1px solid var(--border); }
+
+  /* 待機・結果 */
+  .big-status { text-align: center; font-size: 1.6rem; font-weight: 700; margin: 24px 0; }
+  .winner { text-align: center; margin: 8px 0 20px; }
+  .winner .trophy { font-size: 3rem; }
+  .winner .name { font-size: 1.5rem; font-weight: 700; }
+  .winner .score { color: var(--muted-foreground); }
+  .rank-list { list-style: none; }
+  .rank-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: var(--secondary);
+    border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+    margin-bottom: 6px; font-size: .95rem;
+  }
+  .rank-list .me { outline: 2px solid var(--primary); }
+  .review-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: .95rem; line-height: 1.6; }
+  .review-item:last-child { border-bottom: none; }
+  .review-item .ok { color: var(--green); font-weight: 600; }
+  .review-item .ng { color: var(--destructive); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📚 単語テスト</h1>
+  <p class="subtitle">シリーズを選んで5問。全員提出でランキング発表</p>
+
+  <!-- 参加/作成 -->
+  <div class="screen active" id="screen-entry">
+    <div class="card">
+      <label for="name">名前</label>
+      <input id="name" maxlength="12" placeholder="ニックネーム" />
+      <div id="join-fields">
+        <label for="room">ルームコード</label>
+        <input id="room" maxlength="4" placeholder="例: AB3K" style="text-transform: uppercase;" />
+      </div>
+      <button id="btn-enter">参加する</button>
+      <p class="error" id="entry-error"></p>
+    </div>
+    <button class="leave" onclick="location.href='/'">← ゲーム選択に戻る</button>
+  </div>
+
+  <!-- ロビー -->
+  <div class="screen" id="screen-lobby">
+    <div class="card">
+      <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);">ルームコード</p>
+      <p class="room-code" id="lobby-code"></p>
+      <ul class="player-list" id="lobby-players"></ul>
+      <div id="host-controls" style="display:none;">
+        <label for="sel-category">単語帳</label>
+        <select id="sel-category">
+          <option value="clacel">Clacel 2.0</option>
+          <option value="ielts">IELTS</option>
+          <option value="toeic">TOEIC</option>
+        </select>
+        <label for="sel-series">シリーズ</label>
+        <select id="sel-series"></select>
+        <button id="btn-start">テスト開始</button>
+      </div>
+      <p id="wait-host" style="text-align:center; color:var(--muted-foreground); display:none;">
+        ホスト（<span id="host-name"></span>）の開始を待っています…
+      </p>
+    </div>
+    <button class="leave" onclick="location.href='/'">退出する</button>
+  </div>
+
+  <!-- テスト -->
+  <div class="screen" id="screen-quiz">
+    <div class="card">
+      <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);" id="quiz-set"></p>
+      <div class="progressbar"><div class="fill" id="bar"></div></div>
+      <p class="progress-label"><span id="q-num"></span><span id="submit-status"></span></p>
+      <p class="q-ja" id="q-ja"></p>
+      <p class="q-hint" id="q-hint"></p>
+      <p class="q-sentence" id="q-sentence"></p>
+      <input class="answer-input" id="answer" autocomplete="off" autocapitalize="off" placeholder="単語を入力" />
+      <div class="nav-row">
+        <button class="back" id="btn-back">← 戻る</button>
+        <button id="btn-next">次へ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 待機 -->
+  <div class="screen" id="screen-waiting">
+    <div class="card">
+      <p class="big-status">提出しました 🎉</p>
+      <p style="text-align:center; color:var(--muted-foreground);">
+        提出済み <span id="waiting-count"></span> — 全員の提出を待っています…
+      </p>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="screen" id="screen-results">
+    <div class="card">
+      <div class="winner">
+        <div class="trophy">🏆</div>
+        <div class="name" id="winner-name"></div>
+        <div class="score" id="winner-score"></div>
+      </div>
+      <ul class="rank-list" id="rank-list"></ul>
+    </div>
+    <div class="card">
+      <p style="font-weight:600; margin-bottom:8px;">答え合わせ</p>
+      <div id="review"></div>
+    </div>
+    <div class="card" id="again-card" style="display:none;">
+      <button id="btn-again">もう一度（ロビーに戻る）</button>
+    </div>
+    <button class="leave" onclick="location.href='/'">退出する</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const $ = (id) => document.getElementById(id);
+  const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 5 };
+  const mode = new URLSearchParams(location.search).get("mode") === "create" ? "create" : "join";
+
+  let isHost = false;
+  let questions = [];
+  let answers = [];
+  let idx = 0;
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  // --- 参加/作成 ---
+  if (mode === "create") {
+    $("join-fields").style.display = "none";
+    $("btn-enter").textContent = "ルームを作成";
+  }
+  $("btn-enter").addEventListener("click", () => {
+    const name = $("name").value.trim();
+    if (!name) return ($("entry-error").textContent = "名前を入力してください");
+    const done = (res) => {
+      if (res.error) return ($("entry-error").textContent = res.error);
+      isHost = res.isHost;
+      $("lobby-code").textContent = res.roomCode;
+      show("screen-lobby");
+    };
+    if (mode === "create") socket.emit("quiz:createRoom", { name }, done);
+    else socket.emit("quiz:joinRoom", { roomCode: $("room").value, name }, done);
+  });
+
+  // --- ロビー ---
+  function fillSeries() {
+    const n = SERIES_COUNT[$("sel-category").value];
+    $("sel-series").innerHTML = Array.from({ length: n }, (_, i) =>
+      `<option value="${i}">Series ${i + 1}</option>`).join("");
+  }
+  $("sel-category").addEventListener("change", fillSeries);
+  fillSeries();
+
+  socket.on("quiz:playersUpdate", ({ hostId, hostName, players }) => {
+    isHost = hostId === socket.id;
+    $("host-controls").style.display = isHost ? "" : "none";
+    $("wait-host").style.display = isHost ? "none" : "";
+    $("host-name").textContent = hostName;
+    $("lobby-players").innerHTML = players.map((p) =>
+      `<li><span>${p.name}${p.id === hostId ? " 👑" : ""}</span><span>${p.submitted ? "提出済み ✅" : ""}</span></li>`).join("");
+    $("again-card").style.display = isHost ? "" : "none";
+  });
+
+  $("btn-start").addEventListener("click", () => {
+    socket.emit("quiz:startGame", {
+      category: $("sel-category").value,
+      seriesIndex: Number($("sel-series").value),
+    });
+  });
+
+  // --- テスト ---
+  socket.on("quiz:started", ({ setLabel, total, questions: qs }) => {
+    questions = qs;
+    answers = Array(total).fill("");
+    idx = 0;
+    $("quiz-set").textContent = setLabel;
+    $("submit-status").textContent = "";
+    renderQuestion();
+    show("screen-quiz");
+    $("answer").focus();
+  });
+
+  function renderQuestion() {
+    const q = questions[idx];
+    const total = questions.length;
+    $("bar").style.width = `${(idx / total) * 100}%`;
+    $("q-num").textContent = `第${idx + 1}問 / 全${total}問`;
+    $("q-ja").textContent = q.ja;
+    $("q-hint").textContent = q.hint;
+    $("q-sentence").innerHTML = q.sentence.replace("___", '<span class="blank">___</span>');
+    $("answer").value = answers[idx];
+    $("btn-back").disabled = idx === 0;
+    $("btn-next").textContent = idx === total - 1 ? "提出する" : "次へ";
+  }
+
+  function saveCurrent() { answers[idx] = $("answer").value; }
+
+  $("btn-back").addEventListener("click", () => {
+    saveCurrent();
+    idx--;
+    renderQuestion();
+    $("answer").focus();
+  });
+
+  $("btn-next").addEventListener("click", () => {
+    saveCurrent();
+    if (idx < questions.length - 1) {
+      idx++;
+      renderQuestion();
+      $("answer").focus();
+    } else {
+      socket.emit("quiz:submit", { answers });
+      $("waiting-count").textContent = "…";
+      show("screen-waiting");
+    }
+  });
+
+  $("answer").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("btn-next").click();
+  });
+
+  socket.on("quiz:submitProgress", ({ submitted, total }) => {
+    $("waiting-count").textContent = `${submitted} / ${total}人`;
+    $("submit-status").textContent = `提出済み ${submitted}/${total}`;
+  });
+
+  // --- 結果 ---
+  socket.on("quiz:results", ({ ranking, review }) => {
+    const top = ranking[0];
+    $("winner-name").textContent = top.name;
+    $("winner-score").textContent = `${top.score} / ${top.total}問正解 (${(top.timeMs / 1000).toFixed(1)}秒)`;
+    $("rank-list").innerHTML = ranking.map((r, i) =>
+      `<li class="${r.id === socket.id ? "me" : ""}">
+        <span>${i + 1}位 ${r.name}</span>
+        <span>${r.score}/${r.total}問 ・ ${(r.timeMs / 1000).toFixed(1)}秒</span>
+      </li>`).join("");
+    $("review").innerHTML = review.map((r, i) => {
+      const mine = (answers[i] || "").trim().toLowerCase();
+      const ok = mine === r.answer;
+      const mineLabel = mine ? `あなたの答え: ${mine}` : "あなたの答え: （空欄）";
+      return `<div class="review-item">
+        <div>${i + 1}. ${r.sentence.replace("___", `<strong>${r.answer}</strong>`)}</div>
+        <div>${r.ja} — <span class="${ok ? "ok" : "ng"}">${ok ? "正解 ✅" : "不正解 ❌"}</span> <span style="color:var(--muted-foreground)">${ok ? "" : mineLabel}</span></div>
+      </div>`;
+    }).join("");
+    $("again-card").style.display = isHost ? "" : "none";
+    show("screen-results");
+  });
+
+  $("btn-again").addEventListener("click", () => socket.emit("quiz:playAgain"));
+  socket.on("quiz:backToLobby", () => show("screen-lobby"));
+</script>
+</body>
+</html>
