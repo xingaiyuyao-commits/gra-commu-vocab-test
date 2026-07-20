@@ -494,5 +494,160 @@ io.on("connection", (socket) => {
   }
 });
 
+/* ========== 単語テスト（シリーズ別5問・提出制ランキング） ========== */
+
+const WORDTESTS = require("./wordtests");
+const QUIZ_QUESTION_COUNT = 5;
+const quizRooms = {}; // roomCode -> room state
+
+function makeQuizRoomCode() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return quizRooms[code] ? makeQuizRoomCode() : code;
+}
+
+function quizPublicPlayers(room) {
+  return Object.entries(room.players).map(([id, p]) => ({
+    id,
+    name: p.name,
+    submitted: p.submittedAt !== null,
+  }));
+}
+
+function quizPlayersUpdate(roomCode) {
+  const room = quizRooms[roomCode];
+  io.to(roomCode).emit("quiz:playersUpdate", {
+    hostId: room.host,
+    hostName: room.players[room.host].name,
+    players: quizPublicPlayers(room),
+  });
+}
+
+function quizMaybeFinish(roomCode) {
+  const room = quizRooms[roomCode];
+  if (!room || room.phase !== "playing") return;
+  const players = Object.values(room.players);
+  if (players.length === 0 || !players.every((p) => p.submittedAt !== null)) return;
+  room.phase = "finished";
+  const ranking = Object.entries(room.players)
+    .map(([id, p]) => ({
+      id,
+      name: p.name,
+      score: p.score,
+      total: QUIZ_QUESTION_COUNT,
+      timeMs: p.submittedAt - room.startedAt,
+    }))
+    .sort((a, b) => b.score - a.score || a.timeMs - b.timeMs);
+  io.to(roomCode).emit("quiz:results", {
+    ranking,
+    review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, ja: q.ja })),
+  });
+}
+
+io.on("connection", (socket) => {
+  socket.on("quiz:createRoom", ({ name }, cb) => {
+    const roomCode = makeQuizRoomCode();
+    quizRooms[roomCode] = {
+      host: socket.id,
+      phase: "lobby",
+      players: {},
+      questions: [],
+      startedAt: 0,
+    };
+    quizJoin(socket, roomCode, name, cb);
+  });
+
+  socket.on("quiz:joinRoom", ({ roomCode, name }, cb) => {
+    const code = (roomCode || "").toUpperCase().trim();
+    const room = quizRooms[code];
+    if (!room) return cb({ error: "ルームが見つかりません" });
+    if (room.phase !== "lobby") return cb({ error: "テストはすでに開始しています" });
+    quizJoin(socket, code, name, cb);
+  });
+
+  socket.on("quiz:startGame", ({ category, seriesIndex }) => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room || room.host !== socket.id || room.phase !== "lobby") return;
+    const cat = WORDTESTS[category];
+    const series = cat && cat.series[Number(seriesIndex)];
+    if (!series) return;
+    room.questions = shuffle(series.items).slice(0, QUIZ_QUESTION_COUNT);
+    room.phase = "playing";
+    room.startedAt = Date.now();
+    for (const p of Object.values(room.players)) {
+      p.submittedAt = null;
+      p.score = 0;
+    }
+    io.to(roomCode).emit("quiz:started", {
+      setLabel: `${cat.label} ${series.name}`,
+      total: QUIZ_QUESTION_COUNT,
+      questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
+    });
+  });
+
+  socket.on("quiz:submit", ({ answers }) => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room || room.phase !== "playing") return;
+    const player = room.players[socket.id];
+    if (!player || player.submittedAt !== null) return;
+    const arr = Array.isArray(answers) ? answers : [];
+    player.score = room.questions.reduce(
+      (n, q, i) => n + ((arr[i] || "").trim().toLowerCase() === q.answer ? 1 : 0),
+      0
+    );
+    player.submittedAt = Date.now();
+    const players = Object.values(room.players);
+    io.to(roomCode).emit("quiz:submitProgress", {
+      submitted: players.filter((p) => p.submittedAt !== null).length,
+      total: players.length,
+    });
+    quizMaybeFinish(roomCode);
+  });
+
+  socket.on("quiz:playAgain", () => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room || room.host !== socket.id || room.phase !== "finished") return;
+    room.phase = "lobby";
+    room.questions = [];
+    for (const p of Object.values(room.players)) {
+      p.submittedAt = null;
+      p.score = 0;
+    }
+    io.to(roomCode).emit("quiz:backToLobby");
+    quizPlayersUpdate(roomCode);
+  });
+
+  socket.on("disconnect", () => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room) return;
+    delete room.players[socket.id];
+    if (Object.keys(room.players).length === 0) {
+      delete quizRooms[roomCode];
+      return;
+    }
+    if (room.host === socket.id) room.host = Object.keys(room.players)[0];
+    quizPlayersUpdate(roomCode);
+    if (room.phase === "playing") quizMaybeFinish(roomCode);
+  });
+
+  function quizJoin(sock, roomCode, name, cb) {
+    const room = quizRooms[roomCode];
+    sock.join(roomCode);
+    sock.data.quizRoomCode = roomCode;
+    room.players[sock.id] = {
+      name: (name || "名無し").slice(0, 12),
+      submittedAt: null,
+      score: 0,
+    };
+    cb({ roomCode, isHost: room.host === sock.id });
+    quizPlayersUpdate(roomCode);
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
