@@ -32,7 +32,10 @@
   h1 { text-align: center; font-size: 1.875rem; font-weight: 700; letter-spacing: -.025em; margin-bottom: 8px; }
   .subtitle { text-align: center; color: var(--muted-foreground); font-size: .875rem; margin-bottom: 24px; }
   .grid { display: grid; gap: 16px; }
-  @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 640px) {
+    .grid { grid-template-columns: repeat(3, 1fr); }
+    .grid .featured { grid-column: 1 / -1; }
+  }
   .card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -81,6 +84,12 @@
   <p class="subtitle">プレイするゲームを選んで、ルームに参加または作成してください</p>
   <p class="cycle-banner" id="cycle-banner" style="display:none;"></p>
   <div class="grid">
+    <div class="card featured">
+      <p class="game-title"><span class="emoji">📚</span>単語テスト</p>
+      <p class="desc">Clacel 2.0 / IELTS / TOEICのシリーズを選んで5問の穴埋めテスト。全員提出後にランキング発表。</p>
+      <a class="btn" href="/quiz.html?mode=join">参加する</a>
+      <a class="btn secondary" href="/quiz.html?mode=create">ルームを作成</a>
+    </div>
     <div class="card">
       <p class="game-title"><span class="emoji">🪙</span>コインタワー</p>
       <p class="desc">みんなで穴埋め問題を解いてコインを積む協力ゲーム。正解+1 / 不正解-1。制限時間内にどこまで積める？</p>
@@ -92,12 +101,6 @@
       <p class="desc">2チーム対抗の文章並べ替え。配られた自分の単語を正しいタイミングで置いて、相手チームより早く文を完成させよう。</p>
       <a class="btn" href="/order.html?mode=join">参加する</a>
       <a class="btn secondary" href="/order.html?mode=create">ルームを作成</a>
-    </div>
-    <div class="card">
-      <p class="game-title"><span class="emoji">📚</span>単語テスト</p>
-      <p class="desc">Clacel 2.0 / IELTS / TOEICのシリーズを選んで5問の穴埋めテスト。全員提出後にランキング発表。</p>
-      <a class="btn" href="/quiz.html?mode=join">参加する</a>
-      <a class="btn secondary" href="/quiz.html?mode=create">ルームを作成</a>
     </div>
     <div class="card">
       <p class="game-title"><span class="emoji">🔥</span>Survive</p>
