@@ -350,7 +350,6 @@
       $("perfect-list").innerHTML = perfect.map((p) =>
         `<li class="${p.id === socket.id ? "me" : ""}">
           <span>🏆 ${escapeHtml(p.name)}</span>
-          <span>${(p.timeMs / 1000).toFixed(1)}秒</span>
         </li>`).join("");
     } else {
       $("perfect-list").style.display = "none";
