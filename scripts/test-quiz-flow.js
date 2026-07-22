@@ -37,7 +37,8 @@ async function main() {
     ]);
     host.emit("quiz:startGame", { category: "ielts", seriesIndex: 0 });
     const [qh, qg] = await startedBoth;
-    check(qh.questions.length === 5 && qh.total === 5, "5問配布される");
+    check(qh.questions.length === 20 && qh.total === 20, "20問配布される");
+    check(typeof qh.endsAt === "number" && qh.endsAt > Date.now(), "制限時間の終了時刻が届く");
     check(JSON.stringify(qh.questions) === JSON.stringify(qg.questions), "全員に同じ問題が配られる");
     check(!("answer" in qh.questions[0]), "配布した問題に答えが含まれない");
     check(qh.setLabel === "IELTS Series 1", "セット名が届く");
@@ -54,11 +55,11 @@ async function main() {
     host.emit("quiz:submit", { answers: correctAnswers.map((a) => "  " + a.toUpperCase() + " ") });
     const prog = await progressP;
     check(prog.submitted === 1 && prog.total === 2, "提出状況 1/2 が配信される");
-    guest.emit("quiz:submit", { answers: ["", "", "", "", ""] });
+    guest.emit("quiz:submit", { answers: Array(20).fill("") });
     const [rh] = await resultsBoth;
     check(rh.perfect.length === 1 && rh.perfect[0].name === "ホスト", "大文字・空白混じりでも正解扱いで満点者に入る");
     check(rh.others.length === 1 && rh.others[0].name === "参加者" && rh.others[0].score === 0, "空欄は0点でその他の参加者に入る");
-    check(rh.review.length === 5 && rh.review.every((r) => r.answer && r.sentence.includes("___")), "答え合わせ用の正答が届く");
+    check(rh.review.length === 20 && rh.review.every((r) => r.answer && r.sentence.includes("___")), "答え合わせ用の正答が届く");
 
     // 再戦: ロビーに戻れる
     const backP = new Promise((res) => host.once("quiz:backToLobby", res));
@@ -76,7 +77,7 @@ async function main() {
     h2.emit("quiz:startGame", { category: "toeic", seriesIndex: 2 });
     await started2;
     const results2 = new Promise((res) => h2.once("quiz:results", res));
-    h2.emit("quiz:submit", { answers: ["a", "b", "c", "d", "e"] });
+    h2.emit("quiz:submit", { answers: Array(20).fill("x") });
     g2.disconnect(); // 未提出のまま離脱
     const r2 = await results2;
     const combined2 = [...r2.perfect, ...r2.others];

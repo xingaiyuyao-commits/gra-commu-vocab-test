@@ -494,10 +494,11 @@ io.on("connection", (socket) => {
   }
 });
 
-/* ========== 単語テスト（シリーズ別5問・満点者掲示板） ========== */
+/* ========== 単語テスト（シリーズ別20問・満点者掲示板） ========== */
 
 const WORDTESTS = require("./wordtests");
-const QUIZ_QUESTION_COUNT = 5;
+const QUIZ_QUESTION_COUNT = 20;
+const QUIZ_TIME_LIMIT_SEC = 420; // 7分
 
 const quizRooms = {}; // roomCode -> room state
 
@@ -525,11 +526,27 @@ function quizPlayersUpdate(roomCode) {
   });
 }
 
+function quizForceFinish(roomCode) {
+  const room = quizRooms[roomCode];
+  if (!room || room.phase !== "playing") return;
+  for (const p of Object.values(room.players)) {
+    if (p.submittedAt === null) {
+      p.score = 0;
+      p.submittedAt = Date.now();
+    }
+  }
+  quizMaybeFinish(roomCode);
+}
+
 function quizMaybeFinish(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
   const players = Object.values(room.players);
   if (players.length === 0 || !players.every((p) => p.submittedAt !== null)) return;
+  if (room.timeoutHandle) {
+    clearTimeout(room.timeoutHandle);
+    room.timeoutHandle = null;
+  }
   room.phase = "finished";
   const total = room.questions.length;
   const entries = Object.entries(room.players).map(([id, p]) => ({
@@ -582,6 +599,9 @@ io.on("connection", (socket) => {
     room.questions = shuffle(series.items).slice(0, QUIZ_QUESTION_COUNT);
     room.phase = "playing";
     room.startedAt = Date.now();
+    room.endsAt = room.startedAt + QUIZ_TIME_LIMIT_SEC * 1000;
+    if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
+    room.timeoutHandle = setTimeout(() => quizForceFinish(roomCode), QUIZ_TIME_LIMIT_SEC * 1000);
     for (const p of Object.values(room.players)) {
       p.submittedAt = null;
       p.score = 0;
@@ -589,6 +609,7 @@ io.on("connection", (socket) => {
     io.to(roomCode).emit("quiz:started", {
       setLabel: `${cat.label} ${series.name}`,
       total: room.questions.length,
+      endsAt: room.endsAt,
       questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
     });
   });
@@ -633,6 +654,7 @@ io.on("connection", (socket) => {
     if (!room) return;
     delete room.players[socket.id];
     if (Object.keys(room.players).length === 0) {
+      if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
       delete quizRooms[roomCode];
       return;
     }

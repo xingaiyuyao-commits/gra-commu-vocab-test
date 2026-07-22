@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>📚 単語テスト — シリーズ別5問</title>
+<title>📚 単語テスト — シリーズ別20問</title>
 <style>
   :root {
     --background: oklch(98.5% .002 247);
@@ -126,7 +126,7 @@
 <body>
 <div class="container">
   <h1>📚 単語テスト</h1>
-  <p class="subtitle">シリーズを選んで5問。全員提出で満点者を発表</p>
+  <p class="subtitle">シリーズを選んで20問・制限時間7分。全員提出で満点者を発表</p>
 
   <!-- 参加/作成 -->
   <div class="screen active" id="screen-entry">
@@ -171,6 +171,7 @@
   <div class="screen" id="screen-quiz">
     <div class="card">
       <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);" id="quiz-set"></p>
+      <p style="text-align:center; font-weight:700; margin-bottom:8px;" id="quiz-timer"></p>
       <div class="progressbar"><div class="fill" id="bar"></div></div>
       <p class="progress-label"><span id="q-num"></span><span id="submit-status"></span></p>
       <p class="q-ja" id="q-ja"></p>
@@ -236,6 +237,29 @@
   let questions = [];
   let answers = [];
   let idx = 0;
+  let quizEndsAt = 0;
+  let timerInterval = null;
+
+  function clearQuizTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function updateTimerDisplay() {
+    const remainMs = Math.max(0, quizEndsAt - Date.now());
+    const remainSec = Math.ceil(remainMs / 1000);
+    const m = Math.floor(remainSec / 60);
+    const s = remainSec % 60;
+    $("quiz-timer").textContent = `残り時間 ${m}:${String(s).padStart(2, "0")}`;
+    if (remainMs <= 0) submitQuiz();
+  }
+
+  function submitQuiz() {
+    clearQuizTimer();
+    saveCurrent();
+    socket.emit("quiz:submit", { answers });
+    $("waiting-count").textContent = "…";
+    show("screen-waiting");
+  }
 
   function show(id) {
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
@@ -287,15 +311,19 @@
   });
 
   // --- テスト ---
-  socket.on("quiz:started", ({ setLabel, total, questions: qs }) => {
+  socket.on("quiz:started", ({ setLabel, total, endsAt, questions: qs }) => {
     questions = qs;
     answers = Array(total).fill("");
     idx = 0;
+    quizEndsAt = endsAt;
     $("quiz-set").textContent = setLabel;
     $("submit-status").textContent = "";
     renderQuestion();
     show("screen-quiz");
     $("answer").focus();
+    clearQuizTimer();
+    updateTimerDisplay();
+    timerInterval = setInterval(updateTimerDisplay, 1000);
   });
 
   function renderQuestion() {
@@ -327,9 +355,7 @@
       renderQuestion();
       $("answer").focus();
     } else {
-      socket.emit("quiz:submit", { answers });
-      $("waiting-count").textContent = "…";
-      show("screen-waiting");
+      submitQuiz();
     }
   });
 
@@ -344,6 +370,7 @@
 
   // --- 結果 ---
   socket.on("quiz:results", ({ perfect, others, review }) => {
+    clearQuizTimer();
     if (perfect.length > 0) {
       $("no-perfect").style.display = "none";
       $("perfect-list").style.display = "";
