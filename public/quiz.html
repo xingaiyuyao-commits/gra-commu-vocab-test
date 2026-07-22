@@ -163,6 +163,11 @@
         <select id="sel-series"></select>
         <button id="btn-start">テスト開始</button>
       </div>
+      <div id="review-controls" style="display:none;">
+        <p style="text-align:center; margin-bottom:14px;">今週は復習週です。過去3週分の単語をまとめて出題します。</p>
+        <button id="btn-start-review">復習テストを開始</button>
+        <p class="error" id="review-error"></p>
+      </div>
       <p id="wait-host" style="text-align:center; color:var(--muted-foreground); display:none;">
         ホスト（<span id="host-name"></span>）の開始を待っています…
       </p>
@@ -221,6 +226,8 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
+  let currentWeek = 1;
+  fetch("/api/quiz-cycle").then((r) => r.json()).then(({ week }) => { currentWeek = week; }).catch(() => {});
   const $ = (id) => document.getElementById(id);
   const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 5 };
   const mode = new URLSearchParams(location.search).get("mode") === "create" ? "create" : "join";
@@ -264,7 +271,9 @@
 
   socket.on("quiz:playersUpdate", ({ hostId, hostName, players }) => {
     isHost = hostId === socket.id;
-    $("host-controls").style.display = isHost ? "" : "none";
+    const isReviewWeek = currentWeek === 4;
+    $("host-controls").style.display = isHost && !isReviewWeek ? "" : "none";
+    $("review-controls").style.display = isHost && isReviewWeek ? "" : "none";
     $("wait-host").style.display = isHost ? "none" : "";
     $("host-name").textContent = hostName;
     $("lobby-players").innerHTML = players.map((p) =>
@@ -276,6 +285,13 @@
     socket.emit("quiz:startGame", {
       category: $("sel-category").value,
       seriesIndex: Number($("sel-series").value),
+    });
+  });
+
+  $("btn-start-review").addEventListener("click", () => {
+    $("review-error").textContent = "";
+    socket.emit("quiz:startReview", (res) => {
+      if (res && res.error) $("review-error").textContent = res.error;
     });
   });
 
