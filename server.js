@@ -25,11 +25,39 @@ function saveHighscore(hs) {
   }
 }
 
+const QUIZ_CYCLE_FILE = path.join(__dirname, "quiz-cycle.json");
+
+function loadQuizCycle() {
+  try {
+    const c = JSON.parse(fs.readFileSync(QUIZ_CYCLE_FILE, "utf8"));
+    return { count: c.count || 0, history: Array.isArray(c.history) ? c.history : [] };
+  } catch {
+    return { count: 0, history: [] };
+  }
+}
+
+function saveQuizCycle(cycle) {
+  try {
+    fs.writeFileSync(QUIZ_CYCLE_FILE, JSON.stringify(cycle));
+  } catch (e) {
+    console.error("quiz-cycle save failed:", e.message);
+  }
+}
+
+function quizCycleWeek(count) {
+  return (count % 4) + 1;
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/api/quiz-cycle", (req, res) => {
+  const cycle = loadQuizCycle();
+  res.json({ week: quizCycleWeek(cycle.count), history: cycle.history });
+});
 
 const TOTAL_QUESTIONS = 20;
 const rooms = {}; // roomCode -> room state
