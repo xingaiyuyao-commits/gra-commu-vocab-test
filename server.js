@@ -526,6 +526,30 @@ io.on("connection", (socket) => {
 
 const WORDTESTS = require("./wordtests");
 const QUIZ_QUESTION_COUNT = 5;
+const REVIEW_QUESTION_COUNT = 20;
+
+function buildReviewPool(history) {
+  const seriesList = history
+    .map(({ category, seriesIndex }) => {
+      const cat = WORDTESTS[category];
+      const series = cat && cat.series[Number(seriesIndex)];
+      return series ? { label: `${cat.label} ${series.name}`, items: shuffle(series.items) } : null;
+    })
+    .filter(Boolean);
+  if (seriesList.length === 0) return null;
+
+  const pool = [];
+  let cursor = 0;
+  while (pool.length < REVIEW_QUESTION_COUNT) {
+    const available = seriesList.some((s) => s.items.length > 0);
+    if (!available) break;
+    const s = seriesList[cursor % seriesList.length];
+    cursor++;
+    if (s.items.length > 0) pool.push(s.items.shift());
+  }
+  return { pool: shuffle(pool), labels: seriesList.map((s) => s.label) };
+}
+
 const quizRooms = {}; // roomCode -> room state
 
 function makeQuizRoomCode() {
@@ -605,6 +629,31 @@ io.on("connection", (socket) => {
     room.lastCategory = category;
     room.lastSeriesIndex = Number(seriesIndex);
     room.lastLabel = `${cat.label} ${series.name}`;
+    room.sessionCompleted = false;
+    room.phase = "playing";
+    room.startedAt = Date.now();
+    for (const p of Object.values(room.players)) {
+      p.submittedAt = null;
+      p.score = 0;
+    }
+    io.to(roomCode).emit("quiz:started", {
+      setLabel: room.lastLabel,
+      total: room.questions.length,
+      questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
+    });
+  });
+
+  socket.on("quiz:startReview", (cb) => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room || room.host !== socket.id || room.phase !== "lobby") return;
+    const cycle = loadQuizCycle();
+    const built = buildReviewPool(cycle.history);
+    if (!built) return typeof cb === "function" && cb({ error: "復習用の問題が見つかりません" });
+    room.questions = built.pool;
+    room.lastCategory = null;
+    room.lastSeriesIndex = null;
+    room.lastLabel = `復習テスト: ${built.labels.join(" / ")}`;
     room.sessionCompleted = false;
     room.phase = "playing";
     room.startedAt = Date.now();

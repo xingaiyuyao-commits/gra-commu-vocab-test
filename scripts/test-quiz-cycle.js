@@ -149,6 +149,51 @@ async function main() {
     fs.rmSync(CYCLE_FILE, { force: true });
   }
 
+  // --- シナリオ6: 復習テストが3シリーズから均等に抽出される ---
+  fs.writeFileSync(CYCLE_FILE, JSON.stringify({
+    count: 3,
+    history: [
+      { category: "clacel", seriesIndex: 0, label: "Clacel 2.0 Series 1" },
+      { category: "ielts", seriesIndex: 1, label: "IELTS Series 2" },
+      { category: "toeic", seriesIndex: 2, label: "TOEIC Series 3" },
+    ],
+  }));
+  server = await startServer();
+  try {
+    const host = connect();
+    const created = await new Promise((res) => host.emit("quiz:createRoom", { name: "ホスト" }, res));
+    const startedP = new Promise((res) => host.once("quiz:started", res));
+    host.emit("quiz:startReview");
+    const started = await startedP;
+    check(started.questions.length === 20, `復習テストは20問 (実際: ${started.questions.length})`);
+    check(started.total === 20, "totalも20と一致");
+    check(started.setLabel.includes("Clacel") && started.setLabel.includes("IELTS") && started.setLabel.includes("TOEIC"),
+      `setLabelに3シリーズ名が含まれる (実際: ${started.setLabel})`);
+    const clacelS1 = require("../wordtests-clacel").series[0].items.map((it) => it.sentence);
+    const ieltsS2 = require("../wordtests-ielts").series[1].items.map((it) => it.sentence);
+    const toeicS3 = require("../wordtests-toeic").series[2].items.map((it) => it.sentence);
+    const allowed = new Set([...clacelS1, ...ieltsS2, ...toeicS3]);
+    check(started.questions.every((q) => allowed.has(q.sentence)), "出題は3シリーズの範囲内のみ");
+    host.disconnect();
+  } finally {
+    server.kill();
+    fs.rmSync(CYCLE_FILE, { force: true });
+  }
+
+  // --- シナリオ7: 履歴が空の場合はエラーを返す ---
+  fs.rmSync(CYCLE_FILE, { force: true });
+  server = await startServer();
+  try {
+    const host = connect();
+    await new Promise((res) => host.emit("quiz:createRoom", { name: "ホスト" }, res));
+    const err = await new Promise((res) => host.emit("quiz:startReview", res));
+    check(!!(err && err.error), `historyが空ならエラーを返す (実際: ${JSON.stringify(err)})`);
+    host.disconnect();
+  } finally {
+    server.kill();
+    fs.rmSync(CYCLE_FILE, { force: true });
+  }
+
   const failed = results.filter((c) => !c).length;
   console.log(failed === 0 ? "ALL PASS" : `${failed} FAILED`);
   process.exit(failed === 0 ? 0 : 1);
