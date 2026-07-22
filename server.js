@@ -563,7 +563,7 @@ function quizMaybeFinish(roomCode) {
       id,
       name: p.name,
       score: p.score,
-      total: QUIZ_QUESTION_COUNT,
+      total: room.questions.length,
       timeMs: p.submittedAt - room.startedAt,
     }))
     .sort((a, b) => b.score - a.score || a.timeMs - b.timeMs);
@@ -602,6 +602,9 @@ io.on("connection", (socket) => {
     const series = cat && cat.series[Number(seriesIndex)];
     if (!series) return;
     room.questions = shuffle(series.items).slice(0, QUIZ_QUESTION_COUNT);
+    room.lastCategory = category;
+    room.lastSeriesIndex = Number(seriesIndex);
+    room.lastLabel = `${cat.label} ${series.name}`;
     room.phase = "playing";
     room.startedAt = Date.now();
     for (const p of Object.values(room.players)) {
@@ -609,8 +612,8 @@ io.on("connection", (socket) => {
       p.score = 0;
     }
     io.to(roomCode).emit("quiz:started", {
-      setLabel: `${cat.label} ${series.name}`,
-      total: QUIZ_QUESTION_COUNT,
+      setLabel: room.lastLabel,
+      total: room.questions.length,
       questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
     });
   });
@@ -647,6 +650,26 @@ io.on("connection", (socket) => {
     }
     io.to(roomCode).emit("quiz:backToLobby");
     quizPlayersUpdate(roomCode);
+  });
+
+  socket.on("quiz:completeSession", (cb) => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room || room.host !== socket.id || room.phase !== "finished") return;
+    const cycle = loadQuizCycle();
+    const wasWeek4 = cycle.count % 4 === 3;
+    if (wasWeek4) {
+      cycle.history = [];
+    } else if (room.lastCategory) {
+      cycle.history.push({
+        category: room.lastCategory,
+        seriesIndex: room.lastSeriesIndex,
+        label: room.lastLabel,
+      });
+    }
+    cycle.count += 1;
+    saveQuizCycle(cycle);
+    if (typeof cb === "function") cb({ week: quizCycleWeek(cycle.count), history: cycle.history });
   });
 
   socket.on("disconnect", () => {
