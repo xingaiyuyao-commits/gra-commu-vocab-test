@@ -25,39 +25,11 @@ function saveHighscore(hs) {
   }
 }
 
-const QUIZ_CYCLE_FILE = path.join(__dirname, "quiz-cycle.json");
-
-function loadQuizCycle() {
-  try {
-    const c = JSON.parse(fs.readFileSync(QUIZ_CYCLE_FILE, "utf8"));
-    return { count: c.count || 0, history: Array.isArray(c.history) ? c.history : [] };
-  } catch {
-    return { count: 0, history: [] };
-  }
-}
-
-function saveQuizCycle(cycle) {
-  try {
-    fs.writeFileSync(QUIZ_CYCLE_FILE, JSON.stringify(cycle));
-  } catch (e) {
-    console.error("quiz-cycle save failed:", e.message);
-  }
-}
-
-function quizCycleWeek(count) {
-  return (count % 4) + 1;
-}
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
-
-app.get("/api/quiz-cycle", (req, res) => {
-  const cycle = loadQuizCycle();
-  res.json({ week: quizCycleWeek(cycle.count), history: cycle.history });
-});
 
 const TOTAL_QUESTIONS = 20;
 const rooms = {}; // roomCode -> room state
@@ -522,33 +494,10 @@ io.on("connection", (socket) => {
   }
 });
 
-/* ========== 単語テスト（シリーズ別5問・提出制ランキング） ========== */
+/* ========== 単語テスト（シリーズ別5問・満点者掲示板） ========== */
 
 const WORDTESTS = require("./wordtests");
 const QUIZ_QUESTION_COUNT = 5;
-const REVIEW_QUESTION_COUNT = 20;
-
-function buildReviewPool(history) {
-  const seriesList = history
-    .map(({ category, seriesIndex }) => {
-      const cat = WORDTESTS[category];
-      const series = cat && cat.series[Number(seriesIndex)];
-      return series ? { label: `${cat.label} ${series.name}`, items: shuffle(series.items) } : null;
-    })
-    .filter(Boolean);
-  if (seriesList.length === 0) return null;
-
-  const pool = [];
-  let cursor = 0;
-  while (pool.length < REVIEW_QUESTION_COUNT) {
-    const available = seriesList.some((s) => s.items.length > 0);
-    if (!available) break;
-    const s = seriesList[cursor % seriesList.length];
-    cursor++;
-    if (s.items.length > 0) pool.push(s.items.shift());
-  }
-  return { pool: shuffle(pool), labels: seriesList.map((s) => s.label) };
-}
 
 const quizRooms = {}; // roomCode -> room state
 
@@ -582,17 +531,22 @@ function quizMaybeFinish(roomCode) {
   const players = Object.values(room.players);
   if (players.length === 0 || !players.every((p) => p.submittedAt !== null)) return;
   room.phase = "finished";
-  const ranking = Object.entries(room.players)
-    .map(([id, p]) => ({
-      id,
-      name: p.name,
-      score: p.score,
-      total: room.questions.length,
-      timeMs: p.submittedAt - room.startedAt,
-    }))
-    .sort((a, b) => b.score - a.score || a.timeMs - b.timeMs);
+  const total = room.questions.length;
+  const entries = Object.entries(room.players).map(([id, p]) => ({
+    id,
+    name: p.name,
+    score: p.score,
+    total,
+    timeMs: p.submittedAt - room.startedAt,
+  }));
+  const perfect = entries
+    .filter((e) => e.score === e.total)
+    .sort((a, b) => a.timeMs - b.timeMs)
+    .map((e) => ({ id: e.id, name: e.name, timeMs: e.timeMs }));
+  const others = entries.filter((e) => e.score !== e.total);
   io.to(roomCode).emit("quiz:results", {
-    ranking,
+    perfect,
+    others,
     review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, ja: q.ja })),
   });
 }
@@ -626,10 +580,6 @@ io.on("connection", (socket) => {
     const series = cat && cat.series[Number(seriesIndex)];
     if (!series) return;
     room.questions = shuffle(series.items).slice(0, QUIZ_QUESTION_COUNT);
-    room.lastCategory = category;
-    room.lastSeriesIndex = Number(seriesIndex);
-    room.lastLabel = `${cat.label} ${series.name}`;
-    room.sessionCompleted = false;
     room.phase = "playing";
     room.startedAt = Date.now();
     for (const p of Object.values(room.players)) {
@@ -637,32 +587,7 @@ io.on("connection", (socket) => {
       p.score = 0;
     }
     io.to(roomCode).emit("quiz:started", {
-      setLabel: room.lastLabel,
-      total: room.questions.length,
-      questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
-    });
-  });
-
-  socket.on("quiz:startReview", (cb) => {
-    const roomCode = socket.data.quizRoomCode;
-    const room = quizRooms[roomCode];
-    if (!room || room.host !== socket.id || room.phase !== "lobby") return;
-    const cycle = loadQuizCycle();
-    const built = buildReviewPool(cycle.history);
-    if (!built) return typeof cb === "function" && cb({ error: "復習用の問題が見つかりません" });
-    room.questions = built.pool;
-    room.lastCategory = null;
-    room.lastSeriesIndex = null;
-    room.lastLabel = `復習テスト: ${built.labels.join(" / ")}`;
-    room.sessionCompleted = false;
-    room.phase = "playing";
-    room.startedAt = Date.now();
-    for (const p of Object.values(room.players)) {
-      p.submittedAt = null;
-      p.score = 0;
-    }
-    io.to(roomCode).emit("quiz:started", {
-      setLabel: room.lastLabel,
+      setLabel: `${cat.label} ${series.name}`,
       total: room.questions.length,
       questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
     });
@@ -700,27 +625,6 @@ io.on("connection", (socket) => {
     }
     io.to(roomCode).emit("quiz:backToLobby");
     quizPlayersUpdate(roomCode);
-  });
-
-  socket.on("quiz:completeSession", (cb) => {
-    const roomCode = socket.data.quizRoomCode;
-    const room = quizRooms[roomCode];
-    if (!room || room.host !== socket.id || room.phase !== "finished" || room.sessionCompleted) return;
-    const cycle = loadQuizCycle();
-    const wasWeek4 = cycle.count % 4 === 3;
-    if (wasWeek4) {
-      cycle.history = [];
-    } else if (room.lastCategory) {
-      cycle.history.push({
-        category: room.lastCategory,
-        seriesIndex: room.lastSeriesIndex,
-        label: room.lastLabel,
-      });
-    }
-    cycle.count += 1;
-    saveQuizCycle(cycle);
-    room.sessionCompleted = true;
-    if (typeof cb === "function") cb({ week: quizCycleWeek(cycle.count), history: cycle.history });
   });
 
   socket.on("disconnect", () => {

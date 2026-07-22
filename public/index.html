@@ -67,26 +67,16 @@
     margin-top: 8px;
   }
   a.btn.secondary:hover { background: var(--accent); opacity: 1; }
-  .cycle-banner {
-    text-align: center;
-    background: var(--accent);
-    border: 1px solid var(--border);
-    border-radius: .5rem;
-    padding: 8px 12px;
-    font-size: .875rem;
-    margin-bottom: 16px;
-  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>ゲームを選ぶ</h1>
   <p class="subtitle">プレイするゲームを選んで、ルームに参加または作成してください</p>
-  <p class="cycle-banner" id="cycle-banner" style="display:none;"></p>
   <div class="grid">
     <div class="card featured">
       <p class="game-title"><span class="emoji">📚</span>単語テスト</p>
-      <p class="desc">Clacel 2.0 / IELTS / TOEICのシリーズを選んで5問の穴埋めテスト。全員提出後にランキング発表。</p>
+      <p class="desc">Clacel 2.0 / IELTS / TOEICのシリーズを選んで5問の穴埋めテスト。全員提出後に満点者を発表。</p>
       <a class="btn" href="/quiz.html?mode=join">参加する</a>
       <a class="btn secondary" href="/quiz.html?mode=create">ルームを作成</a>
     </div>
@@ -110,18 +100,5 @@
     </div>
   </div>
 </div>
-<script>
-  fetch("/api/quiz-cycle")
-    .then((r) => r.json())
-    .then(({ week }) => {
-      const el = document.getElementById("cycle-banner");
-      if (!el) return;
-      el.textContent = week === 4
-        ? "📅 第4週（復習週）：3週分の単語まとめテスト"
-        : `📅 第${week}週：単語テスト＋任意で🪙🧩🔥のどれか1つ`;
-      el.style.display = "block";
-    })
-    .catch(() => {});
-</script>
 </body>
 </html>

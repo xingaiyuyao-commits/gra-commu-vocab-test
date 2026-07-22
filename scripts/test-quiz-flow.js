@@ -56,9 +56,8 @@ async function main() {
     check(prog.submitted === 1 && prog.total === 2, "提出状況 1/2 が配信される");
     guest.emit("quiz:submit", { answers: ["", "", "", "", ""] });
     const [rh] = await resultsBoth;
-    check(rh.ranking.length === 2, "全員提出で結果が全員に届く");
-    check(rh.ranking[0].name === "ホスト" && rh.ranking[0].score === 5, "大文字・空白混じりでも正解扱いで1位");
-    check(rh.ranking[1].score === 0, "空欄は0点");
+    check(rh.perfect.length === 1 && rh.perfect[0].name === "ホスト", "大文字・空白混じりでも正解扱いで満点者に入る");
+    check(rh.others.length === 1 && rh.others[0].name === "参加者" && rh.others[0].score === 0, "空欄は0点でその他の参加者に入る");
     check(rh.review.length === 5 && rh.review.every((r) => r.answer && r.sentence.includes("___")), "答え合わせ用の正答が届く");
 
     // 再戦: ロビーに戻れる
@@ -80,7 +79,8 @@ async function main() {
     h2.emit("quiz:submit", { answers: ["a", "b", "c", "d", "e"] });
     g2.disconnect(); // 未提出のまま離脱
     const r2 = await results2;
-    check(r2.ranking.length === 1 && r2.ranking[0].name === "A", "未提出者の切断後、残りだけで結果発表");
+    const combined2 = [...r2.perfect, ...r2.others];
+    check(combined2.length === 1 && combined2[0].name === "A", "未提出者の切断後、残りだけで結果発表");
     h2.disconnect();
   } finally {
     server.kill();

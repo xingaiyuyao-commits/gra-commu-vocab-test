@@ -108,10 +108,7 @@
 
   /* 待機・結果 */
   .big-status { text-align: center; font-size: 1.6rem; font-weight: 700; margin: 24px 0; }
-  .winner { text-align: center; margin: 8px 0 20px; }
-  .winner .trophy { font-size: 3rem; }
-  .winner .name { font-size: 1.5rem; font-weight: 700; }
-  .winner .score { color: var(--muted-foreground); }
+  .perfect-title { font-size: 1.25rem; font-weight: 700; text-align: center; margin-bottom: 12px; }
   .rank-list { list-style: none; }
   .rank-list li {
     display: flex; justify-content: space-between; align-items: center;
@@ -129,7 +126,7 @@
 <body>
 <div class="container">
   <h1>📚 単語テスト</h1>
-  <p class="subtitle">シリーズを選んで5問。全員提出でランキング発表</p>
+  <p class="subtitle">シリーズを選んで5問。全員提出で満点者を発表</p>
 
   <!-- 参加/作成 -->
   <div class="screen active" id="screen-entry">
@@ -162,11 +159,6 @@
         <label for="sel-series">シリーズ</label>
         <select id="sel-series"></select>
         <button id="btn-start">テスト開始</button>
-      </div>
-      <div id="review-controls" style="display:none;">
-        <p style="text-align:center; margin-bottom:14px;">今週は復習週です。過去3週分の単語をまとめて出題します。</p>
-        <button id="btn-start-review">復習テストを開始</button>
-        <p class="error" id="review-error"></p>
       </div>
       <p id="wait-host" style="text-align:center; color:var(--muted-foreground); display:none;">
         ホスト（<span id="host-name"></span>）の開始を待っています…
@@ -205,12 +197,15 @@
   <!-- 結果 -->
   <div class="screen" id="screen-results">
     <div class="card">
-      <div class="winner">
-        <div class="trophy">🏆</div>
-        <div class="name" id="winner-name"></div>
-        <div class="score" id="winner-score"></div>
-      </div>
-      <ul class="rank-list" id="rank-list"></ul>
+      <p class="perfect-title">🏆 満点者</p>
+      <ul class="rank-list" id="perfect-list"></ul>
+      <p id="no-perfect" style="text-align:center; color:var(--muted-foreground); display:none;">
+        今回、満点の人はいませんでした
+      </p>
+    </div>
+    <div class="card" id="others-card" style="display:none;">
+      <p style="font-weight:600; margin-bottom:8px;">その他の参加者</p>
+      <ul class="rank-list" id="others-list"></ul>
     </div>
     <div class="card">
       <p style="font-weight:600; margin-bottom:8px;">答え合わせ</p>
@@ -218,8 +213,6 @@
     </div>
     <div class="card" id="again-card" style="display:none;">
       <button id="btn-again">もう一度（ロビーに戻る）</button>
-      <button class="secondary" id="btn-complete-session">今週分を完了する（次の週へ）</button>
-      <p class="error" id="complete-status"></p>
     </div>
     <button class="leave" onclick="location.href='/'">退出する</button>
   </div>
@@ -228,8 +221,6 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
-  let currentWeek = 1;
-  fetch("/api/quiz-cycle").then((r) => r.json()).then(({ week }) => { currentWeek = week; }).catch(() => {});
   const $ = (id) => document.getElementById(id);
   const escapeHtml = (str) =>
     String(str)
@@ -280,9 +271,7 @@
 
   socket.on("quiz:playersUpdate", ({ hostId, hostName, players }) => {
     isHost = hostId === socket.id;
-    const isReviewWeek = currentWeek === 4;
-    $("host-controls").style.display = isHost && !isReviewWeek ? "" : "none";
-    $("review-controls").style.display = isHost && isReviewWeek ? "" : "none";
+    $("host-controls").style.display = isHost ? "" : "none";
     $("wait-host").style.display = isHost ? "none" : "";
     $("host-name").textContent = hostName;
     $("lobby-players").innerHTML = players.map((p) =>
@@ -294,13 +283,6 @@
     socket.emit("quiz:startGame", {
       category: $("sel-category").value,
       seriesIndex: Number($("sel-series").value),
-    });
-  });
-
-  $("btn-start-review").addEventListener("click", () => {
-    $("review-error").textContent = "";
-    socket.emit("quiz:startReview", (res) => {
-      if (res && res.error) $("review-error").textContent = res.error;
     });
   });
 
@@ -361,14 +343,25 @@
   });
 
   // --- 結果 ---
-  socket.on("quiz:results", ({ ranking, review }) => {
-    const top = ranking[0];
-    $("winner-name").textContent = top.name;
-    $("winner-score").textContent = `${top.score} / ${top.total}問正解 (${(top.timeMs / 1000).toFixed(1)}秒)`;
-    $("rank-list").innerHTML = ranking.map((r, i) =>
-      `<li class="${r.id === socket.id ? "me" : ""}">
-        <span>${i + 1}位 ${escapeHtml(r.name)}</span>
-        <span>${r.score}/${r.total}問 ・ ${(r.timeMs / 1000).toFixed(1)}秒</span>
+  socket.on("quiz:results", ({ perfect, others, review }) => {
+    if (perfect.length > 0) {
+      $("no-perfect").style.display = "none";
+      $("perfect-list").style.display = "";
+      $("perfect-list").innerHTML = perfect.map((p) =>
+        `<li class="${p.id === socket.id ? "me" : ""}">
+          <span>🏆 ${escapeHtml(p.name)}</span>
+          <span>${(p.timeMs / 1000).toFixed(1)}秒</span>
+        </li>`).join("");
+    } else {
+      $("perfect-list").style.display = "none";
+      $("perfect-list").innerHTML = "";
+      $("no-perfect").style.display = "";
+    }
+    $("others-card").style.display = others.length > 0 ? "" : "none";
+    $("others-list").innerHTML = others.map((o) =>
+      `<li class="${o.id === socket.id ? "me" : ""}">
+        <span>${escapeHtml(o.name)}</span>
+        <span>${o.score}/${o.total}問正解</span>
       </li>`).join("");
     $("review").innerHTML = review.map((r, i) => {
       const mine = (answers[i] || "").trim().toLowerCase();
@@ -384,16 +377,6 @@
   });
 
   $("btn-again").addEventListener("click", () => socket.emit("quiz:playAgain"));
-
-  $("btn-complete-session").addEventListener("click", () => {
-    $("btn-complete-session").disabled = true;
-    socket.emit("quiz:completeSession", (res) => {
-      if (!res) { $("btn-complete-session").disabled = false; return; }
-      currentWeek = res.week;
-      $("complete-status").style.color = "var(--green)";
-      $("complete-status").textContent = `完了しました。次は第${res.week}週です。`;
-    });
-  });
   socket.on("quiz:backToLobby", () => show("screen-lobby"));
 </script>
 </body>
