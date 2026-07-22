@@ -218,6 +218,8 @@
     </div>
     <div class="card" id="again-card" style="display:none;">
       <button id="btn-again">もう一度（ロビーに戻る）</button>
+      <button class="secondary" id="btn-complete-session">今週分を完了する（次の週へ）</button>
+      <p class="error" id="complete-status"></p>
     </div>
     <button class="leave" onclick="location.href='/'">退出する</button>
   </div>
@@ -375,6 +377,16 @@
   });
 
   $("btn-again").addEventListener("click", () => socket.emit("quiz:playAgain"));
+
+  $("btn-complete-session").addEventListener("click", () => {
+    $("btn-complete-session").disabled = true;
+    socket.emit("quiz:completeSession", (res) => {
+      if (!res) { $("btn-complete-session").disabled = false; return; }
+      currentWeek = res.week;
+      $("complete-status").style.color = "var(--green)";
+      $("complete-status").textContent = `完了しました。次は第${res.week}週です。`;
+    });
+  });
   socket.on("quiz:backToLobby", () => show("screen-lobby"));
 </script>
 </body>
