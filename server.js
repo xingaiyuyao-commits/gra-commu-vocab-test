@@ -605,6 +605,7 @@ io.on("connection", (socket) => {
     room.lastCategory = category;
     room.lastSeriesIndex = Number(seriesIndex);
     room.lastLabel = `${cat.label} ${series.name}`;
+    room.sessionCompleted = false;
     room.phase = "playing";
     room.startedAt = Date.now();
     for (const p of Object.values(room.players)) {
@@ -655,7 +656,7 @@ io.on("connection", (socket) => {
   socket.on("quiz:completeSession", (cb) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
-    if (!room || room.host !== socket.id || room.phase !== "finished") return;
+    if (!room || room.host !== socket.id || room.phase !== "finished" || room.sessionCompleted) return;
     const cycle = loadQuizCycle();
     const wasWeek4 = cycle.count % 4 === 3;
     if (wasWeek4) {
@@ -669,6 +670,7 @@ io.on("connection", (socket) => {
     }
     cycle.count += 1;
     saveQuizCycle(cycle);
+    room.sessionCompleted = true;
     if (typeof cb === "function") cb({ week: quizCycleWeek(cycle.count), history: cycle.history });
   });
 

@@ -119,6 +119,36 @@ async function main() {
     fs.rmSync(CYCLE_FILE, { force: true });
   }
 
+  // --- シナリオ5: completeSessionを同じホストが2回呼んでも週は1度しか進まない ---
+  fs.rmSync(CYCLE_FILE, { force: true });
+  server = await startServer();
+  try {
+    const host = connect();
+    const created = await new Promise((res) => host.emit("quiz:createRoom", { name: "ホスト" }, res));
+    const startedP = new Promise((res) => host.once("quiz:started", res));
+    host.emit("quiz:startGame", { category: "clacel", seriesIndex: 0 });
+    await startedP;
+    const resultsP = new Promise((res) => host.once("quiz:results", res));
+    host.emit("quiz:submit", { answers: ["", "", "", "", ""] });
+    await resultsP;
+
+    const done5 = await new Promise((res) => host.emit("quiz:completeSession", res));
+    check(done5.week === 2, `1回目のcompleteSessionは成功し week=2 になる (実際: ${done5.week})`);
+
+    const secondAck = await new Promise((res) => {
+      host.timeout(500).emit("quiz:completeSession", (err) => res(err ? "timeout" : "acked"));
+    });
+    check(secondAck === "timeout", "同じホストが2回目のcompleteSessionを呼んでも無視される（ackが来ない）");
+
+    const status5 = await fetch(`${URL}/api/quiz-cycle`).then((r) => r.json());
+    check(status5.week === 2, `2回目呼び出し後もweekは1回目の結果のまま (実際: ${status5.week})`);
+
+    host.disconnect();
+  } finally {
+    server.kill();
+    fs.rmSync(CYCLE_FILE, { force: true });
+  }
+
   const failed = results.filter((c) => !c).length;
   console.log(failed === 0 ? "ALL PASS" : `${failed} FAILED`);
   process.exit(failed === 0 ? 0 : 1);
