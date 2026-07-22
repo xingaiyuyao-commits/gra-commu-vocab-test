@@ -231,6 +231,13 @@
   let currentWeek = 1;
   fetch("/api/quiz-cycle").then((r) => r.json()).then(({ week }) => { currentWeek = week; }).catch(() => {});
   const $ = (id) => document.getElementById(id);
+  const escapeHtml = (str) =>
+    String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 5 };
   const mode = new URLSearchParams(location.search).get("mode") === "create" ? "create" : "join";
 
@@ -279,7 +286,7 @@
     $("wait-host").style.display = isHost ? "none" : "";
     $("host-name").textContent = hostName;
     $("lobby-players").innerHTML = players.map((p) =>
-      `<li><span>${p.name}${p.id === hostId ? " 👑" : ""}</span><span>${p.submitted ? "提出済み ✅" : ""}</span></li>`).join("");
+      `<li><span>${escapeHtml(p.name)}${p.id === hostId ? " 👑" : ""}</span><span>${p.submitted ? "提出済み ✅" : ""}</span></li>`).join("");
     $("again-card").style.display = isHost ? "" : "none";
   });
 
@@ -360,13 +367,13 @@
     $("winner-score").textContent = `${top.score} / ${top.total}問正解 (${(top.timeMs / 1000).toFixed(1)}秒)`;
     $("rank-list").innerHTML = ranking.map((r, i) =>
       `<li class="${r.id === socket.id ? "me" : ""}">
-        <span>${i + 1}位 ${r.name}</span>
+        <span>${i + 1}位 ${escapeHtml(r.name)}</span>
         <span>${r.score}/${r.total}問 ・ ${(r.timeMs / 1000).toFixed(1)}秒</span>
       </li>`).join("");
     $("review").innerHTML = review.map((r, i) => {
       const mine = (answers[i] || "").trim().toLowerCase();
       const ok = mine === r.answer;
-      const mineLabel = mine ? `あなたの答え: ${mine}` : "あなたの答え: （空欄）";
+      const mineLabel = mine ? `あなたの答え: ${escapeHtml(mine)}` : "あなたの答え: （空欄）";
       return `<div class="review-item">
         <div>${i + 1}. ${r.sentence.replace("___", `<strong>${r.answer}</strong>`)}</div>
         <div>${r.ja} — <span class="${ok ? "ok" : "ng"}">${ok ? "正解 ✅" : "不正解 ❌"}</span> <span style="color:var(--muted-foreground)">${ok ? "" : mineLabel}</span></div>
