@@ -526,6 +526,10 @@ function quizPlayersUpdate(roomCode) {
   });
 }
 
+function quizHint(base) {
+  return base[0] + "_".repeat(base.length - 1);
+}
+
 function quizForceFinish(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
@@ -610,7 +614,7 @@ io.on("connection", (socket) => {
       setLabel: `${cat.label} ${series.name}`,
       total: room.questions.length,
       endsAt: room.endsAt,
-      questions: room.questions.map((q) => ({ sentence: q.sentence, hint: q.hint, ja: q.ja })),
+      questions: room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja })),
     });
   });
 
