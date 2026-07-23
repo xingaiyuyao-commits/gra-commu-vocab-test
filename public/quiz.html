@@ -102,6 +102,7 @@
   .q-hint { text-align: center; color: var(--muted-foreground); font-family: ui-monospace, monospace; letter-spacing: .15em; margin-bottom: 14px; }
   .q-sentence { font-size: 1.15rem; line-height: 1.7; text-align: center; margin-bottom: 18px; overflow-wrap: break-word; }
   .q-sentence .blank { font-weight: 700; color: var(--primary); }
+  .q-note { text-align: center; font-size: .75rem; color: var(--muted-foreground); margin-bottom: 10px; }
   .answer-input { font-size: 1.1rem; height: 3rem; text-align: center; }
   .nav-row { display: flex; gap: 10px; margin-top: 4px; }
   .nav-row button.back { width: 35%; background: var(--card); color: var(--foreground); border: 1px solid var(--border); }
@@ -177,6 +178,7 @@
       <p class="q-ja" id="q-ja"></p>
       <p class="q-hint" id="q-hint"></p>
       <p class="q-sentence" id="q-sentence"></p>
+      <p class="q-note">※文法に合わせて活用させて答えてください（例: 過去形・複数形など）</p>
       <input class="answer-input" id="answer" autocomplete="off" autocapitalize="off" placeholder="単語を入力" />
       <div class="nav-row">
         <button class="back" id="btn-back">← 戻る</button>
