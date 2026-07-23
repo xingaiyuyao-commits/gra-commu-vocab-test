@@ -9,7 +9,7 @@ module.exports = {
       items: [
         { sentence: "Yesterday, the children ___ to be superheroes.", answer: "pretended", base: "pretend", hint: "p________", ja: "ふりをする" },
         { sentence: "Please ___ your shoes before entering the room.", answer: "remove", base: "remove", hint: "r_____", ja: "取り除く" },
-        { sentence: "We had to ___ on the crowded train.", answer: "stand", base: "stand", hint: "s____", ja: "立つ、耐える" },
+        { sentence: "She can't ___ the summer heat.", answer: "stand", base: "stand", hint: "s____", ja: "立つ、耐える" },
         { sentence: "The rising prices ___ many families.", answer: "concern", base: "concern", hint: "c______", ja: "心配させる、関係する" },
         { sentence: "I didn't ___ her with her new haircut.", answer: "recognize", base: "recognize", hint: "r________", ja: "認識する、見分ける" },
         { sentence: "The dog likes to ___ holes in the garden.", answer: "dig", base: "dig", hint: "d__", ja: "掘る" },
