@@ -480,6 +480,7 @@ const RESULTS = {
 
 let current = 0;
 let answered = false;
+let pendingBtn = null; // 選択済みだがまだ「決定」前のボタン
 let knownWordCount = 0; // Q1で選んだ「知っている単語」の数（18語中）
 // 軸ごとの成績 { 出題数, 正答数 }（語彙はグリッドの選択数を2点満点に換算）
 const stats = {
@@ -532,17 +533,15 @@ const NOVELTY_VOICE_PREFIXES = [
 // OSの表示言語によって「Reed (英語（アメリカ合衆国）)」のように末尾にロケール名が付くため、
 // 表示名の完全一致では正しく米語版を拾えない）
 const PREFERRED_FEMALE_VOICE_NAMES = ["Google US English", "Samantha"];
-const PREFERRED_MALE_VOICE_NAMES = ["Google US English Male", "Reed", "Eddy", "Daniel"];
+const PREFERRED_MALE_VOICE_NAMES = ["Evan", "Google UK English Male", "Reed", "Eddy", "Daniel"];
 
 function pickVoice(enVoices, speaker) {
   const preferredNames = speaker === "M" ? PREFERRED_MALE_VOICE_NAMES : PREFERRED_FEMALE_VOICE_NAMES;
   for (const name of preferredNames) {
-    const v = enVoices.find((v) => v.name.startsWith(name) && v.lang === "en-US");
-    if (v) return v;
-  }
-  for (const name of preferredNames) {
-    const v = enVoices.find((v) => v.name.startsWith(name));
-    if (v) return v;
+    const usMatch = enVoices.find((v) => v.name.startsWith(name) && v.lang === "en-US");
+    if (usMatch) return usMatch;
+    const anyMatch = enVoices.find((v) => v.name.startsWith(name));
+    if (anyMatch) return anyMatch;
   }
   const clean = enVoices.filter((v) => !NOVELTY_VOICE_PREFIXES.some((p) => v.name.startsWith(p)));
   return clean.find((v) => v.lang === "en-US") || clean[0] || enVoices[0];
@@ -668,6 +667,7 @@ function renderQuestion() {
     speak(q.audio);
   }
 
+  pendingBtn = null;
   const box = document.createElement("div");
   box.className = "choices";
   box.id = "choices";
@@ -676,28 +676,41 @@ function renderQuestion() {
     const btn = document.createElement("button");
     btn.textContent = c;
     if (q.mono) btn.classList.add("mono");
-    btn.onclick = () => answerChoice(btn, c);
+    btn.onclick = () => selectChoice(btn, c);
     box.appendChild(btn);
   });
 }
 
-// 回答直後に○×と正解を表示し、「次へ」ボタンを押したタイミングで進む
-function answerChoice(btn, choice) {
+// 選択肢をタップした時点では確定せず、選び直しができる状態にする
+function selectChoice(btn, choice) {
   if (answered) return;
+  Array.from($("choices").children).forEach((b) => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  pendingBtn = btn;
+  pendingBtn.dataset.choice = choice;
+  const next = $("btn-next");
+  next.textContent = "決定";
+  next.classList.add("show");
+  next.onclick = confirmChoice;
+}
+
+// 「決定」ボタンを押した時点で正誤を確定し、○×と正解を表示する
+function confirmChoice() {
+  if (answered || !pendingBtn) return;
   answered = true;
   const q = QUESTIONS[current];
+  const choice = pendingBtn.dataset.choice;
   stats[q.axis].total++;
   const isCorrect = choice === q.answer;
   if (isCorrect) stats[q.axis].correct++;
   $("choices").classList.add("answered");
-  btn.classList.add("selected", isCorrect ? "correct" : "incorrect");
+  pendingBtn.classList.add(isCorrect ? "correct" : "incorrect");
   if (!isCorrect) {
     const correctBtn = Array.from($("choices").children).find((b) => b.textContent === q.answer);
     if (correctBtn) correctBtn.classList.add("correct");
   }
   const next = $("btn-next");
   next.textContent = "次へ";
-  next.classList.add("show");
   next.onclick = nextQuestion;
 }
 
