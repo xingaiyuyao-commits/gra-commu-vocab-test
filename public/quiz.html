@@ -513,9 +513,12 @@
     show("screen-lobby");
   });
 
-  // --- リロード復帰 ---
+  // --- リロード復帰・再接続 ---
+  // socket.ioは切断後に自動で再接続するが、サーバー側は新しい接続として扱うため
+  // 部屋への再joinはこちらで明示的にやり直す必要がある（"connect"は初回接続時にも発火する）
   function attemptRejoin() {
-    const session = savedSession;
+    let session;
+    try { session = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { session = null; }
     if (!session || !session.roomCode) return;
     socket.emit("quiz:rejoin", { roomCode: session.roomCode, playerId }, (res) => {
       if (!res || !res.ok) { clearSession(); show("screen-entry"); return; }
@@ -552,7 +555,7 @@
       }
     });
   }
-  attemptRejoin();
+  socket.on("connect", attemptRejoin);
 </script>
 </body>
 </html>
