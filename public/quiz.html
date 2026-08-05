@@ -174,7 +174,7 @@
       </div>
       <p class="error" id="entry-error"></p>
     </div>
-    <button class="leave" onclick="location.href='/'">← ゲーム選択に戻る</button>
+    <button class="leave" onclick="leaveRoom(false)">← ゲーム選択に戻る</button>
   </div>
 
   <!-- ロビー -->
@@ -192,7 +192,7 @@
         ホスト（<span id="host-name"></span>）の開始を待っています…
       </p>
     </div>
-    <button class="leave" onclick="location.href='/'">退出する</button>
+    <button class="leave" onclick="leaveRoom(false)">退出する</button>
   </div>
 
   <!-- テスト -->
@@ -212,6 +212,7 @@
         <button class="back" id="btn-back">← 戻る</button>
         <button id="btn-next">次へ</button>
       </div>
+      <button class="leave" onclick="leaveRoom(true)">ルームを退出する</button>
     </div>
   </div>
 
@@ -222,6 +223,7 @@
       <p style="text-align:center; color:var(--muted-foreground);">
         提出済み <span id="waiting-count"></span> — 全員の提出を待っています…
       </p>
+      <button class="leave" onclick="leaveRoom(false)">ルームを退出する</button>
     </div>
   </div>
 
@@ -245,7 +247,7 @@
     <div class="card" id="again-card" style="display:none;">
       <button id="btn-again">もう一度（ロビーに戻る）</button>
     </div>
-    <button class="leave" onclick="location.href='/'">退出する</button>
+    <button class="leave" onclick="leaveRoom(false)">退出する</button>
   </div>
 </div>
 
@@ -263,6 +265,16 @@
   const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 7 };
   const CATEGORY_LABEL = { clacel: "Clacel", ielts: "IELTS", toeic: "TOEIC" };
 
+  function getPlayerId() {
+    let id = localStorage.getItem("quizPlayerId");
+    if (!id) {
+      id = crypto.randomUUID ? crypto.randomUUID() : `p_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem("quizPlayerId", id);
+    }
+    return id;
+  }
+  const playerId = getPlayerId();
+
   let selectedCategory = null;
   let isHost = false;
   let questions = [];
@@ -270,6 +282,34 @@
   let idx = 0;
   let quizEndsAt = 0;
   let timerInterval = null;
+  let currentRoomCode = null;
+
+  function saveSession(roomCode, category) {
+    localStorage.setItem("quizSession", JSON.stringify({ roomCode, category }));
+  }
+  function clearSession() {
+    localStorage.removeItem("quizSession");
+    localStorage.removeItem("quizAnswers");
+    currentRoomCode = null;
+  }
+  function persistAnswers() {
+    if (currentRoomCode) localStorage.setItem("quizAnswers", JSON.stringify({ roomCode: currentRoomCode, answers, idx }));
+  }
+  function loadSavedAnswers(roomCode, length) {
+    try {
+      const saved = JSON.parse(localStorage.getItem("quizAnswers") || "null");
+      if (saved && saved.roomCode === roomCode && Array.isArray(saved.answers) && saved.answers.length === length) {
+        return { answers: saved.answers, idx: Math.min(Math.max(saved.idx || 0, 0), length - 1) };
+      }
+    } catch {}
+    return { answers: Array(length).fill(""), idx: 0 };
+  }
+  function leaveRoom(needConfirm) {
+    if (needConfirm && !confirm("テストの途中ですが退出しますか？")) return;
+    socket.emit("quiz:leave");
+    clearSession();
+    location.href = "/";
+  }
 
   function clearQuizTimer() {
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
@@ -319,6 +359,8 @@
     if (res.error) return ($("entry-error").textContent = res.error);
     isHost = res.isHost;
     selectedCategory = res.category;
+    currentRoomCode = res.roomCode;
+    saveSession(res.roomCode, res.category);
     $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
     $("lobby-code").textContent = res.roomCode;
     fillSeries();
@@ -330,14 +372,14 @@
     if (!name) return ($("entry-error").textContent = "名前を入力してください");
     if (!selectedCategory) return ($("entry-error").textContent = "単語帳を選んでください");
     $("entry-error").textContent = "";
-    socket.emit("quiz:createRoom", { category: selectedCategory, name }, onEntered);
+    socket.emit("quiz:createRoom", { category: selectedCategory, name, playerId }, onEntered);
   });
 
   $("btn-join").addEventListener("click", () => {
     const name = $("name").value.trim();
     if (!name) return ($("entry-error").textContent = "名前を入力してください");
     $("entry-error").textContent = "";
-    socket.emit("quiz:joinRoom", { roomCode: $("room").value, name }, onEntered);
+    socket.emit("quiz:joinRoom", { roomCode: $("room").value, name, playerId }, onEntered);
   });
 
   // --- ロビー ---
@@ -348,7 +390,7 @@
   }
 
   socket.on("quiz:playersUpdate", ({ hostId, hostName, players }) => {
-    isHost = hostId === socket.id;
+    isHost = hostId === playerId;
     $("host-controls").style.display = isHost ? "" : "none";
     $("wait-host").style.display = isHost ? "none" : "";
     $("host-name").textContent = hostName;
@@ -369,6 +411,7 @@
     questions = qs;
     answers = Array(total).fill("");
     idx = 0;
+    persistAnswers();
     quizEndsAt = endsAt;
     $("quiz-set").textContent = setLabel;
     $("submit-status").textContent = "";
@@ -393,11 +436,12 @@
     $("btn-next").textContent = idx === total - 1 ? "提出する" : "次へ";
   }
 
-  function saveCurrent() { answers[idx] = $("answer").value; }
+  function saveCurrent() { answers[idx] = $("answer").value; persistAnswers(); }
 
   $("btn-back").addEventListener("click", () => {
     saveCurrent();
     idx--;
+    persistAnswers();
     renderQuestion();
     $("answer").focus();
   });
@@ -406,6 +450,7 @@
     saveCurrent();
     if (idx < questions.length - 1) {
       idx++;
+      persistAnswers();
       renderQuestion();
       $("answer").focus();
     } else {
@@ -423,13 +468,13 @@
   });
 
   // --- 結果 ---
-  socket.on("quiz:results", ({ perfect, others, review }) => {
+  function renderResults({ perfect, others, review }) {
     clearQuizTimer();
     if (perfect.length > 0) {
       $("no-perfect").style.display = "none";
       $("perfect-list").style.display = "";
       $("perfect-list").innerHTML = perfect.map((p) =>
-        `<li class="${p.id === socket.id ? "me" : ""}">
+        `<li class="${p.id === playerId ? "me" : ""}">
           <span>🏆 ${escapeHtml(p.name)}</span>
         </li>`).join("");
     } else {
@@ -439,7 +484,7 @@
     }
     $("others-card").style.display = others.length > 0 ? "" : "none";
     $("others-list").innerHTML = others.map((o) =>
-      `<li class="${o.id === socket.id ? "me" : ""}">
+      `<li class="${o.id === playerId ? "me" : ""}">
         <span>${escapeHtml(o.name)}</span>
         <span>${o.score}/${o.total}問正解</span>
       </li>`).join("");
@@ -453,11 +498,60 @@
       </div>`;
     }).join("");
     $("again-card").style.display = isHost ? "" : "none";
+  }
+
+  socket.on("quiz:results", (data) => {
+    renderResults(data);
     show("screen-results");
   });
 
   $("btn-again").addEventListener("click", () => socket.emit("quiz:playAgain"));
-  socket.on("quiz:backToLobby", () => show("screen-lobby"));
+  socket.on("quiz:backToLobby", () => {
+    localStorage.removeItem("quizAnswers");
+    show("screen-lobby");
+  });
+
+  // --- リロード復帰 ---
+  function attemptRejoin() {
+    let session;
+    try { session = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { session = null; }
+    if (!session || !session.roomCode) return;
+    socket.emit("quiz:rejoin", { roomCode: session.roomCode, playerId }, (res) => {
+      if (!res || !res.ok) { clearSession(); return; }
+      isHost = res.isHost;
+      selectedCategory = res.category;
+      currentRoomCode = session.roomCode;
+      $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
+      $("lobby-code").textContent = session.roomCode;
+      fillSeries();
+
+      if (res.phase === "playing" && !res.submitted) {
+        questions = res.questions;
+        quizEndsAt = res.endsAt;
+        $("quiz-set").textContent = res.setLabel;
+        $("submit-status").textContent = "";
+        const restored = loadSavedAnswers(currentRoomCode, questions.length);
+        answers = restored.answers;
+        idx = restored.idx;
+        renderQuestion();
+        show("screen-quiz");
+        clearQuizTimer();
+        updateTimerDisplay();
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+      } else if (res.phase === "playing" && res.submitted) {
+        $("waiting-count").textContent = `${res.submittedCount} / ${res.totalCount}人`;
+        show("screen-waiting");
+      } else if (res.phase === "finished" && res.results) {
+        const restored = loadSavedAnswers(currentRoomCode, res.results.review.length);
+        answers = restored.answers;
+        renderResults(res.results);
+        show("screen-results");
+      } else {
+        show("screen-lobby");
+      }
+    });
+  }
+  attemptRejoin();
 </script>
 </body>
 </html>

@@ -81,11 +81,42 @@ async function main() {
     await started2;
     const results2 = new Promise((res) => h2.once("quiz:results", res));
     h2.emit("quiz:submit", { answers: Array(20).fill("x") });
-    g2.disconnect(); // 未提出のまま離脱
+    g2.emit("quiz:leave"); // 未提出のまま明示的に退出（単なる切断＝リロードとは区別される）
     const r2 = await results2;
     const combined2 = [...r2.perfect, ...r2.others];
-    check(combined2.length === 1 && combined2[0].name === "A", "未提出者の切断後、残りだけで結果発表");
-    h2.disconnect();
+    check(combined2.length === 1 && combined2[0].name === "A", "未提出者の退出後、残りだけで結果発表");
+    h2.disconnect(); g2.disconnect();
+
+    // --- シナリオ3: プレイ中にリロード（切断→同じplayerIdで再接続）しても続きから復帰できる ---
+    const h3 = connect();
+    const g3 = connect();
+    const guestPlayerId = "test-guest-" + Math.random().toString(36).slice(2);
+    const c3 = await new Promise((res) => h3.emit("quiz:createRoom", { category: "clacel", name: "A" }, res));
+    await new Promise((res) => g3.emit("quiz:joinRoom", { roomCode: c3.roomCode, name: "B", playerId: guestPlayerId }, res));
+    const started3 = new Promise((res) => h3.once("quiz:started", res));
+    h3.emit("quiz:startGame", { seriesIndex: 0 });
+    await started3;
+
+    g3.disconnect(); // ページリロードを模した瞬断
+    const g3b = connect();
+    const rejoin = await new Promise((res) =>
+      g3b.emit("quiz:rejoin", { roomCode: c3.roomCode, playerId: guestPlayerId }, res)
+    );
+    check(rejoin.ok === true, "同じplayerIdでの再接続はrejoin成功を返す");
+    check(rejoin.phase === "playing" && rejoin.submitted === false, "再接続時にプレイ中であることが分かる");
+    check(Array.isArray(rejoin.questions) && rejoin.questions.length === 20, "再接続時に問題一式を再送してくれる");
+    check(typeof rejoin.endsAt === "number" && rejoin.endsAt > Date.now(), "再接続時に残り時間の終了時刻も届く");
+
+    // 再接続後も通常どおり提出できる
+    const resultsBoth3 = Promise.all([
+      new Promise((res) => h3.once("quiz:results", res)),
+      new Promise((res) => g3b.once("quiz:results", res)),
+    ]);
+    h3.emit("quiz:submit", { answers: Array(20).fill("x") });
+    g3b.emit("quiz:submit", { answers: Array(20).fill("y") });
+    await resultsBoth3;
+    check(true, "再接続後も提出でき結果発表まで進む");
+    h3.disconnect(); g3b.disconnect();
   } finally {
     server.kill();
   }

@@ -90,25 +90,24 @@
     margin-top: 8px;
   }
   a.btn.secondary:hover { background: var(--accent); opacity: 1; }
-  .week-strip { display: flex; gap: 6px; margin-bottom: 28px; }
+  .week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 28px; }
   .week-cell {
-    flex: 1;
     min-width: 0;
     text-align: center;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: calc(var(--radius) - 2px);
-    padding: 8px 2px 9px;
+    padding: 6px 2px 7px;
   }
-  .week-cell .weekday { font-size: .68rem; color: var(--muted-foreground); margin-bottom: 3px; }
-  .week-cell .date { font-size: .8rem; font-weight: 600; margin-bottom: 5px; }
+  .week-cell .weekday { font-size: .62rem; color: var(--muted-foreground); margin-bottom: 2px; }
+  .week-cell .date { font-size: .72rem; font-weight: 600; margin-bottom: 4px; }
   .week-cell .day-label {
     display: inline-block;
-    font-size: .7rem; font-weight: 700;
+    font-size: .62rem; font-weight: 700;
     color: var(--muted-foreground);
     background: var(--accent);
     border-radius: 999px;
-    padding: 1px 8px;
+    padding: 1px 6px;
   }
   .week-cell.today {
     border-color: var(--primary);
@@ -118,8 +117,10 @@
   .week-cell.today .day-label { background: var(--primary); color: var(--primary-foreground); }
   .week-cell.before-start .day-label { color: var(--muted-foreground); background: transparent; }
   @media (max-width: 480px) {
-    .week-cell .weekday, .week-cell .date { font-size: .68rem; }
-    .week-cell .day-label { font-size: .62rem; padding: 1px 5px; }
+    .week-strip { gap: 3px; }
+    .week-cell { padding: 5px 1px 6px; }
+    .week-cell .weekday, .week-cell .date { font-size: .58rem; }
+    .week-cell .day-label { font-size: .52rem; padding: 1px 4px; }
   }
 </style>
 </head>
@@ -173,7 +174,7 @@
     monday.setDate(today.getDate() + (dow === 0 ? -6 : 1 - dow));
 
     const el = document.getElementById("week-strip");
-    el.innerHTML = Array.from({ length: 7 }, (_, i) => {
+    el.innerHTML = Array.from({ length: 14 }, (_, i) => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const dayNum = daysBetween(DAY1, d) + 1;

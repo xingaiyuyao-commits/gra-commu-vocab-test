@@ -609,6 +609,7 @@ app.post("/api/admin/wordtests/:category", express.json({ limit: "2mb" }), check
 
 const quizRooms = {}; // roomCode -> room state
 const QUIZ_CATEGORIES = ["clacel", "ielts", "toeic"];
+const QUIZ_RECONNECT_GRACE_MS = 20000; // リロードで一瞬切断されても復帰できる猶予
 
 function makeQuizRoomCode() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -627,6 +628,7 @@ function quizPublicPlayers(room) {
 
 function quizPlayersUpdate(roomCode) {
   const room = quizRooms[roomCode];
+  if (!room || !room.players[room.host]) return;
   io.to(roomCode).emit("quiz:playersUpdate", {
     hostId: room.host,
     hostName: room.players[room.host].name,
@@ -636,6 +638,10 @@ function quizPlayersUpdate(roomCode) {
 
 function quizHint(base) {
   return base[0] + "_".repeat(base.length - 1);
+}
+
+function quizSanitizedQuestions(room) {
+  return room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja }));
 }
 
 function quizForceFinish(roomCode) {
@@ -673,40 +679,96 @@ function quizMaybeFinish(roomCode) {
     .sort((a, b) => a.timeMs - b.timeMs)
     .map((e) => ({ id: e.id, name: e.name, timeMs: e.timeMs }));
   const others = entries.filter((e) => e.score !== e.total);
-  io.to(roomCode).emit("quiz:results", {
+  room.results = {
     perfect,
     others,
     review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, ja: q.ja })),
-  });
+  };
+  io.to(roomCode).emit("quiz:results", room.results);
+}
+
+// 猶予時間内に戻ってこなかった/明示的に退出した参加者を実際にルームから外す
+function quizFinalizePlayerLeave(roomCode, playerId) {
+  const room = quizRooms[roomCode];
+  if (!room) return;
+  const player = room.players[playerId];
+  if (player && player.leaveTimer) clearTimeout(player.leaveTimer);
+  delete room.players[playerId];
+  if (Object.keys(room.players).length === 0) {
+    if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
+    delete quizRooms[roomCode];
+    return;
+  }
+  if (room.host === playerId) room.host = Object.keys(room.players)[0];
+  quizPlayersUpdate(roomCode);
+  if (room.phase === "playing") quizMaybeFinish(roomCode);
 }
 
 io.on("connection", (socket) => {
-  socket.on("quiz:createRoom", ({ category, name } = {}, cb = () => {}) => {
+  socket.on("quiz:createRoom", ({ category, name, playerId } = {}, cb = () => {}) => {
     if (!QUIZ_CATEGORIES.includes(category)) return cb({ error: "カテゴリが不正です" });
     const roomCode = makeQuizRoomCode();
     quizRooms[roomCode] = {
       category,
-      host: socket.id,
+      host: null,
       phase: "lobby",
       players: {},
       questions: [],
       startedAt: 0,
+      results: null,
     };
-    quizJoin(socket, roomCode, name, cb);
+    quizJoin(socket, roomCode, name, playerId, cb);
   });
 
-  socket.on("quiz:joinRoom", ({ roomCode, name } = {}, cb = () => {}) => {
+  socket.on("quiz:joinRoom", ({ roomCode, name, playerId } = {}, cb = () => {}) => {
     const code = String(roomCode || "").toUpperCase().trim();
     const room = quizRooms[code];
     if (!room) return cb({ error: "ルームが見つかりません" });
     if (room.phase !== "lobby") return cb({ error: "テストはすでに開始しています" });
-    quizJoin(socket, code, name, cb);
+    quizJoin(socket, code, name, playerId, cb);
+  });
+
+  // リロード・再接続で同じplayerIdが戻ってきたら、進行中の状態のまま復帰させる
+  socket.on("quiz:rejoin", ({ roomCode, playerId } = {}, cb = () => {}) => {
+    const code = String(roomCode || "").toUpperCase().trim();
+    const room = quizRooms[code];
+    const player = room && playerId && room.players[playerId];
+    if (!room || !player) return cb({ ok: false });
+
+    if (player.leaveTimer) {
+      clearTimeout(player.leaveTimer);
+      player.leaveTimer = null;
+    }
+    socket.join(code);
+    socket.data.quizRoomCode = code;
+    socket.data.quizPlayerId = playerId;
+
+    const res = {
+      ok: true,
+      isHost: room.host === playerId,
+      category: room.category,
+      phase: room.phase,
+      submitted: player.submittedAt !== null,
+    };
+    if (room.phase === "playing") {
+      res.setLabel = room.setLabel;
+      res.total = room.questions.length;
+      res.endsAt = room.endsAt;
+      res.questions = quizSanitizedQuestions(room);
+      const players = Object.values(room.players);
+      res.submittedCount = players.filter((p) => p.submittedAt !== null).length;
+      res.totalCount = players.length;
+    } else if (room.phase === "finished" && room.results) {
+      res.results = room.results;
+    }
+    cb(res);
+    quizPlayersUpdate(code);
   });
 
   socket.on("quiz:startGame", ({ seriesIndex } = {}) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
-    if (!room || room.host !== socket.id || room.phase !== "lobby") return;
+    if (!room || room.host !== socket.data.quizPlayerId || room.phase !== "lobby") return;
     const cat = WORDTESTS[room.category];
     const series = cat && cat.series[Number(seriesIndex)];
     if (!series) return;
@@ -714,6 +776,8 @@ io.on("connection", (socket) => {
     room.phase = "playing";
     room.startedAt = Date.now();
     room.endsAt = room.startedAt + QUIZ_TIME_LIMIT_SEC * 1000;
+    room.setLabel = `${cat.label} ${series.name}`;
+    room.results = null;
     if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
     room.timeoutHandle = setTimeout(() => quizForceFinish(roomCode), QUIZ_TIME_LIMIT_SEC * 1000);
     for (const p of Object.values(room.players)) {
@@ -721,10 +785,10 @@ io.on("connection", (socket) => {
       p.score = 0;
     }
     io.to(roomCode).emit("quiz:started", {
-      setLabel: `${cat.label} ${series.name}`,
+      setLabel: room.setLabel,
       total: room.questions.length,
       endsAt: room.endsAt,
-      questions: room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja })),
+      questions: quizSanitizedQuestions(room),
     });
   });
 
@@ -732,7 +796,7 @@ io.on("connection", (socket) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
     if (!room || room.phase !== "playing") return;
-    const player = room.players[socket.id];
+    const player = room.players[socket.data.quizPlayerId];
     if (!player || player.submittedAt !== null) return;
     const arr = Array.isArray(answers) ? answers : [];
     player.score = room.questions.reduce(
@@ -751,9 +815,10 @@ io.on("connection", (socket) => {
   socket.on("quiz:playAgain", () => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
-    if (!room || room.host !== socket.id || room.phase !== "finished") return;
+    if (!room || room.host !== socket.data.quizPlayerId || room.phase !== "finished") return;
     room.phase = "lobby";
     room.questions = [];
+    room.results = null;
     for (const p of Object.values(room.players)) {
       p.submittedAt = null;
       p.score = 0;
@@ -762,31 +827,38 @@ io.on("connection", (socket) => {
     quizPlayersUpdate(roomCode);
   });
 
-  socket.on("disconnect", () => {
+  socket.on("quiz:leave", () => {
     const roomCode = socket.data.quizRoomCode;
-    const room = quizRooms[roomCode];
-    if (!room) return;
-    delete room.players[socket.id];
-    if (Object.keys(room.players).length === 0) {
-      if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
-      delete quizRooms[roomCode];
-      return;
-    }
-    if (room.host === socket.id) room.host = Object.keys(room.players)[0];
-    quizPlayersUpdate(roomCode);
-    if (room.phase === "playing") quizMaybeFinish(roomCode);
+    const playerId = socket.data.quizPlayerId;
+    socket.data.quizRoomCode = null;
+    socket.data.quizPlayerId = null;
+    if (!roomCode || !playerId) return;
+    quizFinalizePlayerLeave(roomCode, playerId);
   });
 
-  function quizJoin(sock, roomCode, name, cb) {
+  socket.on("disconnect", () => {
+    const roomCode = socket.data.quizRoomCode;
+    const playerId = socket.data.quizPlayerId;
     const room = quizRooms[roomCode];
+    const player = room && playerId && room.players[playerId];
+    if (!player) return;
+    player.leaveTimer = setTimeout(() => quizFinalizePlayerLeave(roomCode, playerId), QUIZ_RECONNECT_GRACE_MS);
+  });
+
+  function quizJoin(sock, roomCode, name, playerId, cb) {
+    const room = quizRooms[roomCode];
+    const id = String(playerId || "").trim() || `p_${Math.random().toString(36).slice(2, 10)}`;
     sock.join(roomCode);
     sock.data.quizRoomCode = roomCode;
-    room.players[sock.id] = {
+    sock.data.quizPlayerId = id;
+    room.players[id] = {
       name: String(name || "名無し").slice(0, 12),
       submittedAt: null,
       score: 0,
+      leaveTimer: null,
     };
-    cb({ roomCode, isHost: room.host === sock.id, category: room.category });
+    if (!room.host) room.host = id;
+    cb({ roomCode, isHost: room.host === id, category: room.category, playerId: id });
     quizPlayersUpdate(roomCode);
   }
 });
