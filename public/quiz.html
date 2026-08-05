@@ -154,7 +154,7 @@
   <p class="subtitle">Dayを選んで20問・制限時間5分。全員提出で満点者を発表</p>
 
   <!-- 参加/作成 -->
-  <div class="screen active" id="screen-entry">
+  <div class="screen" id="screen-entry">
     <div class="card">
       <label for="name">名前</label>
       <input id="name" maxlength="12" placeholder="コミュニティ名" />
@@ -212,8 +212,8 @@
         <button class="back" id="btn-back">← 戻る</button>
         <button id="btn-next">次へ</button>
       </div>
-      <button class="leave" onclick="leaveRoom(true)">ルームを退出する</button>
     </div>
+    <button class="leave" onclick="leaveRoom(true)">ルームを退出する</button>
   </div>
 
   <!-- 待機 -->
@@ -223,8 +223,8 @@
       <p style="text-align:center; color:var(--muted-foreground);">
         提出済み <span id="waiting-count"></span> — 全員の提出を待っています…
       </p>
-      <button class="leave" onclick="leaveRoom(false)">ルームを退出する</button>
     </div>
+    <button class="leave" onclick="leaveRoom(false)">ルームを退出する</button>
   </div>
 
   <!-- 結果 -->
@@ -236,9 +236,9 @@
         今回、満点の人はいませんでした
       </p>
     </div>
-    <div class="card" id="others-card" style="display:none;">
-      <p style="font-weight:600; margin-bottom:8px;">その他の参加者</p>
-      <ul class="rank-list" id="others-list"></ul>
+    <div class="card" id="encourage-card" style="display:none;">
+      <p style="font-weight:700; text-align:center; margin-bottom:6px;">💪 明日は満点を目指そう！</p>
+      <p style="text-align:center; color:var(--muted-foreground); font-size:.9rem;">間違えた単語はスクショやノートに残して、忘れないうちに復習しよう</p>
     </div>
     <div class="card">
       <p style="font-weight:600; margin-bottom:8px;">答え合わせ</p>
@@ -336,6 +336,12 @@
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
     $(id).classList.add("active");
   }
+
+  // 復帰セッションがある場合はattemptRejoin()の応答が来るまで何も表示しない
+  // （先にentry画面を出してしまうと、リロード直後に一瞬前の画面が見えてしまうため）
+  let savedSession;
+  try { savedSession = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { savedSession = null; }
+  if (!savedSession || !savedSession.roomCode) show("screen-entry");
 
   // --- 参加/作成 ---
   const entryMode = new URLSearchParams(location.search).get("mode");
@@ -468,7 +474,7 @@
   });
 
   // --- 結果 ---
-  function renderResults({ perfect, others, review }) {
+  function renderResults({ perfect, review }) {
     clearQuizTimer();
     if (perfect.length > 0) {
       $("no-perfect").style.display = "none";
@@ -482,12 +488,8 @@
       $("perfect-list").innerHTML = "";
       $("no-perfect").style.display = "";
     }
-    $("others-card").style.display = others.length > 0 ? "" : "none";
-    $("others-list").innerHTML = others.map((o) =>
-      `<li class="${o.id === playerId ? "me" : ""}">
-        <span>${escapeHtml(o.name)}</span>
-        <span>${o.score}/${o.total}問正解</span>
-      </li>`).join("");
+    const iAmPerfect = perfect.some((p) => p.id === playerId);
+    $("encourage-card").style.display = iAmPerfect ? "none" : "";
     $("review").innerHTML = review.map((r, i) => {
       const mine = (answers[i] || "").trim().toLowerCase();
       const ok = mine === r.answer;
@@ -513,11 +515,10 @@
 
   // --- リロード復帰 ---
   function attemptRejoin() {
-    let session;
-    try { session = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { session = null; }
+    const session = savedSession;
     if (!session || !session.roomCode) return;
     socket.emit("quiz:rejoin", { roomCode: session.roomCode, playerId }, (res) => {
-      if (!res || !res.ok) { clearSession(); return; }
+      if (!res || !res.ok) { clearSession(); show("screen-entry"); return; }
       isHost = res.isHost;
       selectedCategory = res.category;
       currentRoomCode = session.roomCode;
