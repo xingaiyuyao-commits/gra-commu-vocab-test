@@ -29,6 +29,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// ソケットイベント内の例外はNode側で捕捉されずプロセス全体を落とすため、
+// ここで受け止めて他の進行中ルームを巻き込まないようにする（復旧不能な状態異常より全断のほうが実害が大きい）
+process.on("uncaughtException", (err) => console.error("uncaughtException:", err));
+process.on("unhandledRejection", (err) => console.error("unhandledRejection:", err));
+
 app.use(express.static(path.join(__dirname, "public")));
 
 const TOTAL_QUESTIONS = 20;
@@ -127,7 +132,7 @@ function maybeAdvance(roomCode) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("createRoom", ({ name }, cb) => {
+  socket.on("createRoom", ({ name } = {}, cb = () => {}) => {
     const roomCode = makeRoomCode();
     rooms[roomCode] = {
       host: socket.id,
@@ -140,15 +145,15 @@ io.on("connection", (socket) => {
     joinRoom(socket, roomCode, name, cb);
   });
 
-  socket.on("joinRoom", ({ roomCode, name }, cb) => {
-    const code = (roomCode || "").toUpperCase().trim();
+  socket.on("joinRoom", ({ roomCode, name } = {}, cb = () => {}) => {
+    const code = String(roomCode || "").toUpperCase().trim();
     const room = rooms[code];
     if (!room) return cb({ error: "ルームが見つかりません" });
     if (room.phase !== "lobby") return cb({ error: "ゲームはすでに開始しています" });
     joinRoom(socket, code, name, cb);
   });
 
-  socket.on("startGame", (opts) => {
+  socket.on("startGame", (opts = {}) => {
     const roomCode = socket.data.roomCode;
     const room = rooms[roomCode];
     if (!room || room.host !== socket.id || room.phase !== "lobby") return;
@@ -159,7 +164,7 @@ io.on("connection", (socket) => {
     sendQuestion(roomCode);
   });
 
-  socket.on("answer", ({ text }) => {
+  socket.on("answer", ({ text } = {}) => {
     const roomCode = socket.data.roomCode;
     const room = rooms[roomCode];
     if (!room || room.phase !== "playing") return;
@@ -167,7 +172,7 @@ io.on("connection", (socket) => {
     if (!player || player.answeredCurrent) return;
 
     const q = room.questions[room.currentIndex];
-    const correct = (text || "").trim().toLowerCase() === q.answer;
+    const correct = String(text || "").trim().toLowerCase() === q.answer;
     player.answeredCurrent = true;
     if (correct) {
       player.correct++;
@@ -210,7 +215,7 @@ io.on("connection", (socket) => {
     sock.join(roomCode);
     sock.data.roomCode = roomCode;
     room.players[sock.id] = {
-      name: (name || "名無し").slice(0, 12),
+      name: String(name || "名無し").slice(0, 12),
       correct: 0,
       wrong: 0,
       answeredCurrent: false,
@@ -350,7 +355,7 @@ function orderEndGame(roomCode, forcedWinner) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("order:createRoom", ({ name }, cb) => {
+  socket.on("order:createRoom", ({ name } = {}, cb = () => {}) => {
     const roomCode = makeOrderRoomCode();
     orderRooms[roomCode] = {
       host: socket.id,
@@ -365,8 +370,8 @@ io.on("connection", (socket) => {
     orderJoin(socket, roomCode, name, cb);
   });
 
-  socket.on("order:joinRoom", ({ roomCode, name }, cb) => {
-    const code = (roomCode || "").toUpperCase().trim();
+  socket.on("order:joinRoom", ({ roomCode, name } = {}, cb = () => {}) => {
+    const code = String(roomCode || "").toUpperCase().trim();
     const room = orderRooms[code];
     if (!room) return cb({ error: "ルームが見つかりません" });
     if (room.phase !== "lobby") return cb({ error: "ゲームはすでに開始しています" });
@@ -387,7 +392,7 @@ io.on("connection", (socket) => {
     orderStartRound(roomCode);
   });
 
-  socket.on("order:place", ({ word }) => {
+  socket.on("order:place", ({ word } = {}) => {
     const roomCode = socket.data.orderRoomCode;
     const room = orderRooms[roomCode];
     if (!room || room.phase !== "playing" || !room.roundActive) return;
@@ -478,7 +483,7 @@ io.on("connection", (socket) => {
     sock.join(roomCode);
     sock.data.orderRoomCode = roomCode;
     room.players[sock.id] = {
-      name: (name || "名無し").slice(0, 12),
+      name: String(name || "名無し").slice(0, 12),
       team: null,
       hand: [],
       placed: 0,
@@ -676,7 +681,7 @@ function quizMaybeFinish(roomCode) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("quiz:createRoom", ({ category, name }, cb) => {
+  socket.on("quiz:createRoom", ({ category, name } = {}, cb = () => {}) => {
     if (!QUIZ_CATEGORIES.includes(category)) return cb({ error: "カテゴリが不正です" });
     const roomCode = makeQuizRoomCode();
     quizRooms[roomCode] = {
@@ -690,15 +695,15 @@ io.on("connection", (socket) => {
     quizJoin(socket, roomCode, name, cb);
   });
 
-  socket.on("quiz:joinRoom", ({ roomCode, name }, cb) => {
-    const code = (roomCode || "").toUpperCase().trim();
+  socket.on("quiz:joinRoom", ({ roomCode, name } = {}, cb = () => {}) => {
+    const code = String(roomCode || "").toUpperCase().trim();
     const room = quizRooms[code];
     if (!room) return cb({ error: "ルームが見つかりません" });
     if (room.phase !== "lobby") return cb({ error: "テストはすでに開始しています" });
     quizJoin(socket, code, name, cb);
   });
 
-  socket.on("quiz:startGame", ({ seriesIndex }) => {
+  socket.on("quiz:startGame", ({ seriesIndex } = {}) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
     if (!room || room.host !== socket.id || room.phase !== "lobby") return;
@@ -723,7 +728,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("quiz:submit", ({ answers }) => {
+  socket.on("quiz:submit", ({ answers } = {}) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
     if (!room || room.phase !== "playing") return;
@@ -731,7 +736,7 @@ io.on("connection", (socket) => {
     if (!player || player.submittedAt !== null) return;
     const arr = Array.isArray(answers) ? answers : [];
     player.score = room.questions.reduce(
-      (n, q, i) => n + ((arr[i] || "").trim().toLowerCase() === q.answer ? 1 : 0),
+      (n, q, i) => n + (String(arr[i] || "").trim().toLowerCase() === q.answer ? 1 : 0),
       0
     );
     player.submittedAt = Date.now();
@@ -777,7 +782,7 @@ io.on("connection", (socket) => {
     sock.join(roomCode);
     sock.data.quizRoomCode = roomCode;
     room.players[sock.id] = {
-      name: (name || "名無し").slice(0, 12),
+      name: String(name || "名無し").slice(0, 12),
       submittedAt: null,
       score: 0,
     };
