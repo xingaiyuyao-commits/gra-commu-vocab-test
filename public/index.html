@@ -48,6 +48,29 @@
   .game-title { font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .game-title .emoji { font-size: 1.5rem; }
   .desc { font-size: .875rem; color: var(--muted-foreground); margin-bottom: 20px; flex: 1; }
+  .card.disabled { opacity: .7; filter: grayscale(.7); }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    font-size: .75rem; font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin-bottom: 12px;
+    width: fit-content;
+  }
+  button.btn {
+    width: 100%;
+    border: none;
+    cursor: not-allowed;
+    background: var(--accent);
+    color: var(--muted-foreground);
+  }
+  button.btn.secondary { margin-top: 8px; }
   a.btn {
     display: flex; align-items: center; justify-content: center;
     height: 2.25rem;
@@ -67,38 +90,105 @@
     margin-top: 8px;
   }
   a.btn.secondary:hover { background: var(--accent); opacity: 1; }
+  .week-strip { display: flex; gap: 6px; margin-bottom: 28px; }
+  .week-cell {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    padding: 8px 2px 9px;
+  }
+  .week-cell .weekday { font-size: .68rem; color: var(--muted-foreground); margin-bottom: 3px; }
+  .week-cell .date { font-size: .8rem; font-weight: 600; margin-bottom: 5px; }
+  .week-cell .day-label {
+    display: inline-block;
+    font-size: .7rem; font-weight: 700;
+    color: var(--muted-foreground);
+    background: var(--accent);
+    border-radius: 999px;
+    padding: 1px 8px;
+  }
+  .week-cell.today {
+    border-color: var(--primary);
+    background: color-mix(in oklch, var(--primary) 8%, var(--card));
+  }
+  .week-cell.today .date { color: var(--primary); }
+  .week-cell.today .day-label { background: var(--primary); color: var(--primary-foreground); }
+  .week-cell.before-start .day-label { color: var(--muted-foreground); background: transparent; }
+  @media (max-width: 480px) {
+    .week-cell .weekday, .week-cell .date { font-size: .68rem; }
+    .week-cell .day-label { font-size: .62rem; padding: 1px 5px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>ゲームを選ぶ</h1>
-  <p class="subtitle">プレイするゲームを選んで、ルームに参加または作成してください</p>
+  <div class="week-strip" id="week-strip"></div>
   <div class="grid">
     <div class="card featured">
       <p class="game-title"><span class="emoji">📚</span>単語テスト</p>
-      <p class="desc">Clacel 2.0 / IELTS / TOEICのシリーズを選んで20問・制限時間7分の穴埋めテスト。</p>
+      <p class="desc">Clacel / IELTS / TOEICのDayを選んで20問・制限時間5分の穴埋めテスト。</p>
       <a class="btn" href="/quiz.html?mode=join">参加する</a>
       <a class="btn secondary" href="/quiz.html?mode=create">ルームを作成</a>
     </div>
-    <div class="card">
+    <div class="card disabled">
       <p class="game-title"><span class="emoji">🪙</span>コインタワー</p>
+      <p class="badge">🚧 開発中</p>
       <p class="desc">みんなで穴埋め問題を解いてコインを積む協力ゲーム。正解+1 / 不正解-1。制限時間内にどこまで積める？</p>
-      <a class="btn" href="/coin.html?mode=join">参加する</a>
-      <a class="btn secondary" href="/coin.html?mode=create">ルームを作成</a>
+      <button class="btn" disabled>参加する</button>
+      <button class="btn secondary" disabled>ルームを作成</button>
     </div>
-    <div class="card">
+    <div class="card disabled">
       <p class="game-title"><span class="emoji">🧩</span>並べ替えバトル</p>
+      <p class="badge">🚧 開発中</p>
       <p class="desc">2チーム対抗の文章並べ替え。配られた自分の単語を正しいタイミングで置いて、相手チームより早く文を完成させよう。</p>
-      <a class="btn" href="/order.html?mode=join">参加する</a>
-      <a class="btn secondary" href="/order.html?mode=create">ルームを作成</a>
+      <button class="btn" disabled>参加する</button>
+      <button class="btn secondary" disabled>ルームを作成</button>
     </div>
-    <div class="card">
+    <div class="card disabled">
       <p class="game-title"><span class="emoji">🔥</span>Survive</p>
+      <p class="badge">🚧 開発中</p>
       <p class="desc">30問サバイバル（A2〜C1プリセット）。15秒以内に正解した人だけ生き残る。</p>
-      <a class="btn" href="https://realtime-chat-production-b389.up.railway.app/join/survive">参加する</a>
-      <a class="btn secondary" href="https://realtime-chat-production-b389.up.railway.app/admin/survive">ルームを作成</a>
+      <button class="btn" disabled>参加する</button>
+      <button class="btn secondary" disabled>ルームを作成</button>
     </div>
   </div>
 </div>
+<script>
+  const DAY1 = new Date(2026, 7, 6); // 8/6スタート、毎日連続でDay+1
+  const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+  function daysBetween(a, b) {
+    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+    return Math.round((utcB - utcA) / 86400000);
+  }
+
+  function renderWeekStrip() {
+    const today = new Date();
+    const dow = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + (dow === 0 ? -6 : 1 - dow));
+
+    const el = document.getElementById("week-strip");
+    el.innerHTML = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dayNum = daysBetween(DAY1, d) + 1;
+      const isToday = daysBetween(d, today) === 0;
+      const started = dayNum >= 1;
+      return `
+        <div class="week-cell${isToday ? " today" : ""}${started ? "" : " before-start"}">
+          <p class="weekday">${WEEKDAYS[d.getDay()]}</p>
+          <p class="date">${d.getMonth() + 1}/${d.getDate()}</p>
+          <span class="day-label">${started ? `Day ${dayNum}` : "-"}</span>
+        </div>
+      `;
+    }).join("");
+  }
+  renderWeekStrip();
+</script>
 </body>
 </html>

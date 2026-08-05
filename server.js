@@ -498,9 +498,112 @@ io.on("connection", (socket) => {
 
 const WORDTESTS = require("./wordtests");
 const QUIZ_QUESTION_COUNT = 20;
-const QUIZ_TIME_LIMIT_SEC = 420; // 7分
+const QUIZ_TIME_LIMIT_SEC = 300; // 5分
+
+/* ---------- 単語リスト編集画面（管理用API） ---------- */
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+const WORDTESTS_FILES = {
+  clacel: path.join(__dirname, "wordtests-clacel.js"),
+  ielts: path.join(__dirname, "wordtests-ielts.js"),
+  toeic: path.join(__dirname, "wordtests-toeic.js"),
+};
+
+function checkAdminAuth(req, res, next) {
+  if (!ADMIN_PASSWORD) {
+    return res.status(503).json({ error: "サーバーに ADMIN_PASSWORD が設定されていません" });
+  }
+  if (req.headers["x-admin-password"] !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "パスワードが違います" });
+  }
+  next();
+}
+
+function makeHint(answer) {
+  return answer[0] + "_".repeat(answer.length - 1);
+}
+
+function validateWordtestsData(data) {
+  const errors = [];
+  if (!data.label) errors.push("label がありません");
+  if (!Array.isArray(data.series) || data.series.length === 0) errors.push("series がありません");
+  (data.series || []).forEach((s, si) => {
+    if (!s.name) errors.push(`series[${si}]: name がありません`);
+    const seen = new Set();
+    (s.items || []).forEach((it, i) => {
+      const tag = `${s.name || "series" + si} #${i + 1}`;
+      if (!it.sentence || !it.sentence.includes("___")) errors.push(`${tag}: 例文に ___ がありません`);
+      if (!it.answer || !/^[a-z][a-z'-]*$/.test(it.answer.toLowerCase()))
+        errors.push(`${tag}: answer の形式が不正です`);
+      if (!it.base || !/^[a-z][a-z'-]*$/.test(it.base.toLowerCase())) errors.push(`${tag}: base の形式が不正です`);
+      if (!it.ja) errors.push(`${tag}: ja（日本語訳）がありません`);
+      const base = (it.base || "").toLowerCase();
+      if (seen.has(base)) errors.push(`${s.name}: base が重複しています（${base}）`);
+      seen.add(base);
+    });
+  });
+  return errors;
+}
+
+function serializeWordtestsFile(data, filePath) {
+  let headerComment = "";
+  if (fs.existsSync(filePath)) {
+    const existing = fs.readFileSync(filePath, "utf8");
+    const commentLines = [];
+    for (const line of existing.split("\n")) {
+      if (line.startsWith("//")) commentLines.push(line);
+      else break;
+    }
+    if (commentLines.length) headerComment = commentLines.join("\n") + "\n";
+  }
+  let out = headerComment;
+  out += "module.exports = {\n";
+  out += `  label: ${JSON.stringify(data.label)},\n`;
+  out += "  series: [\n";
+  data.series.forEach((s) => {
+    out += "    {\n";
+    out += `      name: ${JSON.stringify(s.name)},\n`;
+    out += "      items: [\n";
+    s.items.forEach((it) => {
+      const answer = it.answer.toLowerCase();
+      const base = it.base.toLowerCase();
+      out += `        { sentence: ${JSON.stringify(it.sentence)}, answer: ${JSON.stringify(answer)}, base: ${JSON.stringify(base)}, hint: ${JSON.stringify(makeHint(answer))}, ja: ${JSON.stringify(it.ja)} },\n`;
+    });
+    out += "      ],\n";
+    out += "    },\n";
+  });
+  out += "  ],\n";
+  out += "};\n";
+  return out;
+}
+
+app.get("/api/admin/wordtests/:category", express.json(), checkAdminAuth, (req, res) => {
+  const filePath = WORDTESTS_FILES[req.params.category];
+  if (!filePath) return res.status(404).json({ error: "不明なカテゴリです" });
+  delete require.cache[require.resolve(filePath)];
+  res.json(require(filePath));
+});
+
+app.post("/api/admin/wordtests/:category", express.json({ limit: "2mb" }), checkAdminAuth, (req, res) => {
+  const category = req.params.category;
+  const filePath = WORDTESTS_FILES[category];
+  if (!filePath) return res.status(404).json({ error: "不明なカテゴリです" });
+
+  const errors = validateWordtestsData(req.body);
+  if (errors.length) return res.status(400).json({ error: "検証エラー", details: errors });
+
+  try {
+    fs.writeFileSync(filePath, serializeWordtestsFile(req.body, filePath), "utf8");
+    delete require.cache[require.resolve(filePath)];
+    WORDTESTS[category] = require(filePath);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: "保存に失敗しました: " + e.message });
+  }
+});
 
 const quizRooms = {}; // roomCode -> room state
+const QUIZ_CATEGORIES = ["clacel", "ielts", "toeic"];
 
 function makeQuizRoomCode() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -573,9 +676,11 @@ function quizMaybeFinish(roomCode) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("quiz:createRoom", ({ name }, cb) => {
+  socket.on("quiz:createRoom", ({ category, name }, cb) => {
+    if (!QUIZ_CATEGORIES.includes(category)) return cb({ error: "カテゴリが不正です" });
     const roomCode = makeQuizRoomCode();
     quizRooms[roomCode] = {
+      category,
       host: socket.id,
       phase: "lobby",
       players: {},
@@ -593,11 +698,11 @@ io.on("connection", (socket) => {
     quizJoin(socket, code, name, cb);
   });
 
-  socket.on("quiz:startGame", ({ category, seriesIndex }) => {
+  socket.on("quiz:startGame", ({ seriesIndex }) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
     if (!room || room.host !== socket.id || room.phase !== "lobby") return;
-    const cat = WORDTESTS[category];
+    const cat = WORDTESTS[room.category];
     const series = cat && cat.series[Number(seriesIndex)];
     if (!series) return;
     room.questions = shuffle(series.items).slice(0, QUIZ_QUESTION_COUNT);
@@ -676,7 +781,7 @@ io.on("connection", (socket) => {
       submittedAt: null,
       score: 0,
     };
-    cb({ roomCode, isHost: room.host === sock.id });
+    cb({ roomCode, isHost: room.host === sock.id, category: room.category });
     quizPlayersUpdate(roomCode);
   }
 });

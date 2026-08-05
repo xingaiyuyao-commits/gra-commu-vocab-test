@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>📚 単語テスト — シリーズ別20問</title>
+<title>📚 単語テスト — Day別20問</title>
 <style>
   :root {
     --background: oklch(98.5% .002 247);
@@ -78,6 +78,30 @@
     border: 1px solid var(--border);
     margin-top: 10px;
   }
+  .category-buttons {
+    display: flex;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 6px;
+  }
+  .cat-btn {
+    flex: 1;
+    width: auto;
+    height: 2.2rem;
+    background: transparent;
+    color: var(--muted-foreground);
+    border: none;
+    font-weight: 600;
+    font-size: .85rem;
+    border-radius: calc(var(--radius) - 4px);
+  }
+  .cat-btn:hover { background: transparent; color: var(--foreground); opacity: 1; }
+  .cat-btn.selected { background: var(--primary); color: var(--primary-foreground); }
+  #btn-create { margin-top: 14px; }
+  #btn-create:disabled { opacity: .5; cursor: not-allowed; }
   button:disabled { opacity: .5; cursor: default; pointer-events: none; }
   .error { color: var(--destructive); text-align: center; margin-top: 8px; min-height: 1.2em; font-size: .875rem; }
   .room-code { text-align: center; font-size: 2.25rem; letter-spacing: .3em; font-weight: 700; color: var(--primary); margin: 4px 0 12px; }
@@ -127,18 +151,27 @@
 <body>
 <div class="container">
   <h1>📚 単語テスト</h1>
-  <p class="subtitle">シリーズを選んで20問・制限時間7分。全員提出で満点者を発表</p>
+  <p class="subtitle">Dayを選んで20問・制限時間5分。全員提出で満点者を発表</p>
 
   <!-- 参加/作成 -->
   <div class="screen active" id="screen-entry">
     <div class="card">
       <label for="name">名前</label>
-      <input id="name" maxlength="12" placeholder="ニックネーム" />
-      <div id="join-fields">
-        <label for="room">ルームコード</label>
-        <input id="room" maxlength="4" placeholder="例: AB3K" style="text-transform: uppercase;" />
+      <input id="name" maxlength="12" placeholder="コミュニティ名" />
+      <div id="create-section">
+        <label>単語帳を選んでルームを作成</label>
+        <div class="category-buttons">
+          <button class="cat-btn" data-category="clacel">Clacel</button>
+          <button class="cat-btn" data-category="ielts">IELTS</button>
+          <button class="cat-btn" data-category="toeic">TOEIC</button>
+        </div>
+        <button id="btn-create" disabled>ルームを作成</button>
       </div>
-      <button id="btn-enter">参加する</button>
+      <div id="join-section">
+        <label for="room" style="margin-top:20px">ルームコードで参加</label>
+        <input id="room" maxlength="4" placeholder="例: AB3K" style="text-transform: uppercase;" />
+        <button id="btn-join" class="secondary">参加する</button>
+      </div>
       <p class="error" id="entry-error"></p>
     </div>
     <button class="leave" onclick="location.href='/'">← ゲーム選択に戻る</button>
@@ -147,17 +180,11 @@
   <!-- ロビー -->
   <div class="screen" id="screen-lobby">
     <div class="card">
-      <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);">ルームコード</p>
+      <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);" id="lobby-category"></p>
       <p class="room-code" id="lobby-code"></p>
       <ul class="player-list" id="lobby-players"></ul>
       <div id="host-controls" style="display:none;">
-        <label for="sel-category">単語帳</label>
-        <select id="sel-category">
-          <option value="clacel">Clacel 2.0</option>
-          <option value="ielts">IELTS</option>
-          <option value="toeic">TOEIC</option>
-        </select>
-        <label for="sel-series">シリーズ</label>
+        <label for="sel-series">Day</label>
         <select id="sel-series"></select>
         <button id="btn-start">テスト開始</button>
       </div>
@@ -172,6 +199,7 @@
   <div class="screen" id="screen-quiz">
     <div class="card">
       <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);" id="quiz-set"></p>
+      <p style="text-align:center; font-size:.75rem; color:var(--muted-foreground); margin-bottom:4px;" id="quiz-players"></p>
       <p style="text-align:center; font-weight:700; margin-bottom:8px;" id="quiz-timer"></p>
       <div class="progressbar"><div class="fill" id="bar"></div></div>
       <p class="progress-label"><span id="q-num"></span><span id="submit-status"></span></p>
@@ -232,9 +260,10 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
-  const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 5 };
-  const mode = new URLSearchParams(location.search).get("mode") === "create" ? "create" : "join";
+  const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 7 };
+  const CATEGORY_LABEL = { clacel: "Clacel", ielts: "IELTS", toeic: "TOEIC" };
 
+  let selectedCategory = null;
   let isHost = false;
   let questions = [];
   let answers = [];
@@ -269,31 +298,54 @@
   }
 
   // --- 参加/作成 ---
-  if (mode === "create") {
-    $("join-fields").style.display = "none";
-    $("btn-enter").textContent = "ルームを作成";
+  const entryMode = new URLSearchParams(location.search).get("mode");
+  if (entryMode === "create") {
+    $("join-section").style.display = "none";
+  } else if (entryMode === "join") {
+    $("create-section").style.display = "none";
+    $("room").parentElement.querySelector("label").style.marginTop = "0";
+    $("btn-join").classList.remove("secondary");
   }
-  $("btn-enter").addEventListener("click", () => {
+
+  document.querySelectorAll(".cat-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedCategory = btn.dataset.category;
+      document.querySelectorAll(".cat-btn").forEach((b) => b.classList.toggle("selected", b === btn));
+      $("btn-create").disabled = false;
+    });
+  });
+
+  function onEntered(res) {
+    if (res.error) return ($("entry-error").textContent = res.error);
+    isHost = res.isHost;
+    selectedCategory = res.category;
+    $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
+    $("lobby-code").textContent = res.roomCode;
+    fillSeries();
+    show("screen-lobby");
+  }
+
+  $("btn-create").addEventListener("click", () => {
     const name = $("name").value.trim();
     if (!name) return ($("entry-error").textContent = "名前を入力してください");
-    const done = (res) => {
-      if (res.error) return ($("entry-error").textContent = res.error);
-      isHost = res.isHost;
-      $("lobby-code").textContent = res.roomCode;
-      show("screen-lobby");
-    };
-    if (mode === "create") socket.emit("quiz:createRoom", { name }, done);
-    else socket.emit("quiz:joinRoom", { roomCode: $("room").value, name }, done);
+    if (!selectedCategory) return ($("entry-error").textContent = "単語帳を選んでください");
+    $("entry-error").textContent = "";
+    socket.emit("quiz:createRoom", { category: selectedCategory, name }, onEntered);
+  });
+
+  $("btn-join").addEventListener("click", () => {
+    const name = $("name").value.trim();
+    if (!name) return ($("entry-error").textContent = "名前を入力してください");
+    $("entry-error").textContent = "";
+    socket.emit("quiz:joinRoom", { roomCode: $("room").value, name }, onEntered);
   });
 
   // --- ロビー ---
   function fillSeries() {
-    const n = SERIES_COUNT[$("sel-category").value];
+    const n = SERIES_COUNT[selectedCategory];
     $("sel-series").innerHTML = Array.from({ length: n }, (_, i) =>
-      `<option value="${i}">Series ${i + 1}</option>`).join("");
+      `<option value="${i}">Day ${i + 1}</option>`).join("");
   }
-  $("sel-category").addEventListener("change", fillSeries);
-  fillSeries();
 
   socket.on("quiz:playersUpdate", ({ hostId, hostName, players }) => {
     isHost = hostId === socket.id;
@@ -303,11 +355,11 @@
     $("lobby-players").innerHTML = players.map((p) =>
       `<li><span>${escapeHtml(p.name)}${p.id === hostId ? " 👑" : ""}</span><span>${p.submitted ? "提出済み ✅" : ""}</span></li>`).join("");
     $("again-card").style.display = isHost ? "" : "none";
+    $("quiz-players").textContent = `参加者 ${players.length}人: ${players.map((p) => p.name).join("、")}`;
   });
 
   $("btn-start").addEventListener("click", () => {
     socket.emit("quiz:startGame", {
-      category: $("sel-category").value,
       seriesIndex: Number($("sel-series").value),
     });
   });

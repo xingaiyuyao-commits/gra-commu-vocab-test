@@ -4,7 +4,7 @@ module.exports = {
   label: "IELTS",
   series: [
     {
-      name: "Series 1",
+      name: "Day 1",
       items: [
         { sentence: "Last year, researchers ___ the data from a large national survey.", answer: "obtained", base: "obtain", hint: "o_______", ja: "得る、入手する" },
         { sentence: "Modern technology currently ___ communication between countries.", answer: "facilitates", base: "facilitate", hint: "f__________", ja: "促進する、容易にする" },
@@ -29,7 +29,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 2",
+      name: "Day 2",
       items: [
         { sentence: "The government will ___ more funds to public health.", answer: "allocate", base: "allocate", hint: "a_______", ja: "割り当てる、配分する" },
         { sentence: "Extra training can ___ for a lack of experience.", answer: "compensate", base: "compensate", hint: "c_________", ja: "埋め合わせる、補償する" },
@@ -54,7 +54,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 3",
+      name: "Day 3",
       items: [
         { sentence: "The experiment was designed to test the ___.", answer: "hypothesis", base: "hypothesis", hint: "h_________", ja: "仮説" },
         { sentence: "The essay examines several ___ of urban life.", answer: "aspects", base: "aspect", hint: "a______", ja: "側面、観点" },
@@ -79,7 +79,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 4",
+      name: "Day 4",
       items: [
         { sentence: "A careful ___ of the data revealed a clear pattern.", answer: "analysis", base: "analysis", hint: "a_______", ja: "分析" },
         { sentence: "Diet is an important ___ in good health.", answer: "factor", base: "factor", hint: "f_____", ja: "要因" },
@@ -104,7 +104,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 5",
+      name: "Day 5",
       items: [
         { sentence: "There was a ___ increase in average temperatures.", answer: "significant", base: "significant", hint: "s__________", ja: "重要な、著しい" },
         { sentence: "English is the ___ language in international business.", answer: "dominant", base: "dominant", hint: "d_______", ja: "支配的な、優勢な" },

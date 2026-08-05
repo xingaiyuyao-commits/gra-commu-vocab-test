@@ -4,7 +4,7 @@ module.exports = {
   label: "TOEIC",
   series: [
     {
-      name: "Series 1",
+      name: "Day 1",
       items: [
         { sentence: "The company will ___ its annual report next week.", answer: "publish", base: "publish", hint: "p______", ja: "出版する、公表する" },
         { sentence: "Please ___ a copy of your receipt with the form.", answer: "enclose", base: "enclose", hint: "e______", ja: "同封する" },
@@ -29,7 +29,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 2",
+      name: "Day 2",
       items: [
         { sentence: "Workers ___ the furniture before it is shipped.", answer: "assemble", base: "assemble", hint: "a_______", ja: "組み立てる、集める" },
         { sentence: "She will ___ the schedules of all the departments.", answer: "coordinate", base: "coordinate", hint: "c_________", ja: "調整する、まとめる" },
@@ -54,7 +54,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 3",
+      name: "Day 3",
       items: [
         { sentence: "She is taking a two-week ___ in July.", answer: "vacation", base: "vacation", hint: "v_______", ja: "休暇" },
         { sentence: "Our biggest ___ signed a new contract today.", answer: "client", base: "client", hint: "c_____", ja: "顧客、依頼人" },
@@ -79,7 +79,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 4",
+      name: "Day 4",
       items: [
         { sentence: "The first item on the ___ is the budget review.", answer: "agenda", base: "agenda", hint: "a_____", ja: "議題" },
         { sentence: "The team went over its ___ last quarter.", answer: "budget", base: "budget", hint: "b_____", ja: "予算" },
@@ -104,7 +104,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 5",
+      name: "Day 5",
       items: [
         { sentence: "Her explanation was clear and ___.", answer: "logical", base: "logical", hint: "l______", ja: "論理的な" },
         { sentence: "The station is in a very ___ location.", answer: "convenient", base: "convenient", hint: "c_________", ja: "便利な" },
@@ -126,6 +126,56 @@ module.exports = {
         { sentence: "The building is ___ to wheelchair users.", answer: "accessible", base: "accessible", hint: "a_________", ja: "利用しやすい、行きやすい" },
         { sentence: "The shop offers ___ prices on electronics.", answer: "competitive", base: "competitive", hint: "c__________", ja: "競争力のある" },
         { sentence: "Our company offers ___ working hours.", answer: "flexible", base: "flexible", hint: "f_______", ja: "柔軟な" },
+      ],
+    },
+    {
+      name: "Day 6",
+      items: [
+        { sentence: "We ___ apologize for the delay in shipping.", answer: "sincerely", base: "sincerely", hint: "s________", ja: "心から、敬具" },
+        { sentence: "Please make sure the form is filled out ___.", answer: "correctly", base: "correctly", hint: "c________", ja: "正しく" },
+        { sentence: "The technician responded ___ to our request.", answer: "promptly", base: "promptly", hint: "p_______", ja: "迅速に、時間通りに" },
+        { sentence: "The manager will be with you ___.", answer: "shortly", base: "shortly", hint: "s______", ja: "まもなく" },
+        { sentence: "The report ___ reflects last quarter's sales.", answer: "accurately", base: "accurately", hint: "a_________", ja: "正確に" },
+        { sentence: "This software is ___ used in accounting departments.", answer: "commonly", base: "commonly", hint: "c_______", ja: "一般的に" },
+        { sentence: "Please review the contract ___ before signing.", answer: "thoroughly", base: "thoroughly", hint: "t_________", ja: "徹底的に" },
+        { sentence: "The conference is held ___ in Chicago.", answer: "annually", base: "annually", hint: "a_______", ja: "毎年" },
+        { sentence: "Sales dropped, so we adjusted the budget ___.", answer: "accordingly", base: "accordingly", hint: "a__________", ja: "それに応じて" },
+        { sentence: "You can pay online, or ___, visit our office.", answer: "alternatively", base: "alternatively", hint: "a____________", ja: "あるいは、その代わりに" },
+        { sentence: "The team has ___ met its monthly targets.", answer: "consistently", base: "consistently", hint: "c___________", ja: "一貫して" },
+        { sentence: "Please invoice the two orders ___.", answer: "separately", base: "separately", hint: "s_________", ja: "別々に" },
+        { sentence: "All our vegetables are sourced ___.", answer: "locally", base: "locally", hint: "l______", ja: "地元で" },
+        { sentence: "The merger was ___ announced this morning.", answer: "formally", base: "formally", hint: "f_______", ja: "正式に" },
+        { sentence: "Make sure the workload is divided ___ among the team.", answer: "evenly", base: "evenly", hint: "e_____", ja: "均等に" },
+        { sentence: "Fuel prices rose ___ last month.", answer: "sharply", base: "sharply", hint: "s______", ja: "急激に" },
+        { sentence: "All complaints should be handled ___.", answer: "professionally", base: "professionally", hint: "p_____________", ja: "プロらしく、専門的に" },
+        { sentence: "The transition to the new system went ___.", answer: "smoothly", base: "smoothly", hint: "s_______", ja: "円滑に" },
+        { sentence: "Membership numbers have grown ___ this year.", answer: "steadily", base: "steadily", hint: "s_______", ja: "着実に" },
+        { sentence: "___, the presentation could have been shorter.", answer: "honestly", base: "honestly", hint: "h_______", ja: "正直に言って" },
+      ],
+    },
+    {
+      name: "Day 7",
+      items: [
+        { sentence: "We need to ___ the contract by Friday.", answer: "finalize", base: "finalize", hint: "f_______", ja: "最終決定する" },
+        { sentence: "The manager ___ staff to update their passwords.", answer: "instructed", base: "instruct", hint: "i_________", ja: "指示する、指導する" },
+        { sentence: "All departments are expected to ___ on the new policy.", answer: "cooperate", base: "cooperate", hint: "c________", ja: "協力する" },
+        { sentence: "The airline agreed to ___ passengers for the delay.", answer: "compensate", base: "compensate", hint: "c_________", ja: "補償する" },
+        { sentence: "The new software ___ the ordering process.", answer: "simplifies", base: "simplify", hint: "s_________", ja: "簡素化する" },
+        { sentence: "She was ___ for Employee of the Year.", answer: "nominated", base: "nominate", hint: "n________", ja: "指名する、推薦する" },
+        { sentence: "The two companies plan to ___ next year.", answer: "merge", base: "merge", hint: "m____", ja: "合併する" },
+        { sentence: "The contract can be ___ with 30 days' notice.", answer: "terminated", base: "terminate", hint: "t_________", ja: "終了する、解除する" },
+        { sentence: "The team worked overtime to ___ the issue.", answer: "resolve", base: "resolve", hint: "r______", ja: "解決する" },
+        { sentence: "We ___ customer feedback closely.", answer: "monitor", base: "monitor", hint: "m______", ja: "監視する" },
+        { sentence: "The new system ___ the approval process.", answer: "streamlines", base: "streamline", hint: "s__________", ja: "効率化する" },
+        { sentence: "The budget was ___ to three main projects.", answer: "allocated", base: "allocate", hint: "a________", ja: "割り当てる" },
+        { sentence: "You can ___ the report to fit your needs.", answer: "customize", base: "customize", hint: "c________", ja: "カスタマイズする" },
+        { sentence: "The technician ___ the problem quickly.", answer: "diagnosed", base: "diagnose", hint: "d________", ja: "診断する" },
+        { sentence: "The company will ___ this product line.", answer: "discontinue", base: "discontinue", hint: "d__________", ja: "中止する、廃止する" },
+        { sentence: "Could you ___ what you mean by that?", answer: "clarify", base: "clarify", hint: "c______", ja: "明確にする" },
+        { sentence: "She ___ the data into a single report.", answer: "compiled", base: "compile", hint: "c_______", ja: "まとめる、編集する" },
+        { sentence: "The HR department ___ employee benefits.", answer: "administers", base: "administer", hint: "a__________", ja: "管理する、運営する" },
+        { sentence: "A good manager knows how to ___ tasks.", answer: "delegate", base: "delegate", hint: "d_______", ja: "委任する" },
+        { sentence: "We took steps to ___ the risk of delays.", answer: "minimize", base: "minimize", hint: "m_______", ja: "最小限にする" },
       ],
     },
   ],

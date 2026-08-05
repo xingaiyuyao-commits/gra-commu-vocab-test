@@ -22,26 +22,29 @@ async function main() {
     const host = connect();
     const guest = connect();
 
-    const created = await new Promise((res) => host.emit("quiz:createRoom", { name: "ホスト" }, res));
-    check(!!(created.roomCode && created.isHost), "ルーム作成でコードとホスト権が返る");
+    const created = await new Promise((res) => host.emit("quiz:createRoom", { category: "ielts", name: "ホスト" }, res));
+    check(!!(created.roomCode && created.isHost && created.category === "ielts"), "ルーム作成でルームコードとホスト権が返る");
 
     const joined = await new Promise((res) => guest.emit("quiz:joinRoom", { roomCode: created.roomCode, name: "参加者" }, res));
-    check(joined.roomCode === created.roomCode && joined.isHost === false, "参加者がロビーに入れる");
+    check(joined.roomCode === created.roomCode && joined.isHost === false, "ルームコードで同じロビーに入れる");
 
-    const bad = await new Promise((res) => guest.emit("quiz:joinRoom", { roomCode: "XXXX", name: "誰か" }, res));
-    check(!!bad.error, "存在しないルームコードはエラー");
+    const bad = await new Promise((res) => guest.emit("quiz:createRoom", { category: "bogus", name: "誰か" }, res));
+    check(!!bad.error, "不正なカテゴリはエラー");
+
+    const notFound = await new Promise((res) => guest.emit("quiz:joinRoom", { roomCode: "ZZZZ", name: "誰か" }, res));
+    check(!!notFound.error, "存在しないルームコードはエラー");
 
     const startedBoth = Promise.all([
       new Promise((res) => host.once("quiz:started", res)),
       new Promise((res) => guest.once("quiz:started", res)),
     ]);
-    host.emit("quiz:startGame", { category: "ielts", seriesIndex: 0 });
+    host.emit("quiz:startGame", { seriesIndex: 0 });
     const [qh, qg] = await startedBoth;
     check(qh.questions.length === 20 && qh.total === 20, "20問配布される");
     check(typeof qh.endsAt === "number" && qh.endsAt > Date.now(), "制限時間の終了時刻が届く");
     check(JSON.stringify(qh.questions) === JSON.stringify(qg.questions), "全員に同じ問題が配られる");
     check(!("answer" in qh.questions[0]), "配布した問題に答えが含まれない");
-    check(qh.setLabel === "IELTS Series 1", "セット名が届く");
+    check(qh.setLabel === "IELTS Day 1", "セット名が届く");
 
     // 正答は問題文からデータを引いて求める（ホストは全問正解、参加者は全問空欄）
     const items = WORDTESTS.ielts.series[0].items;
@@ -71,10 +74,10 @@ async function main() {
     // --- シナリオ2: プレイ中の切断で残りメンバーだけで結果発表 ---
     const h2 = connect();
     const g2 = connect();
-    const c2 = await new Promise((res) => h2.emit("quiz:createRoom", { name: "A" }, res));
+    const c2 = await new Promise((res) => h2.emit("quiz:createRoom", { category: "toeic", name: "A" }, res));
     await new Promise((res) => g2.emit("quiz:joinRoom", { roomCode: c2.roomCode, name: "B" }, res));
     const started2 = new Promise((res) => h2.once("quiz:started", res));
-    h2.emit("quiz:startGame", { category: "toeic", seriesIndex: 2 });
+    h2.emit("quiz:startGame", { seriesIndex: 2 });
     await started2;
     const results2 = new Promise((res) => h2.once("quiz:results", res));
     h2.emit("quiz:submit", { answers: Array(20).fill("x") });

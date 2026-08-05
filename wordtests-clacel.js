@@ -2,10 +2,10 @@
 // answer は例文中の活用形を小文字で保持。判定時に両者を小文字化して比較する
 // Series 8 のみ12語（副詞・接続詞・前置詞。PDF側の設計で語数が少ない）
 module.exports = {
-  label: "Clacel 2.0",
+  label: "Clacel",
   series: [
     {
-      name: "Series 1",
+      name: "Day 1",
       items: [
         { sentence: "Yesterday, the children ___ to be superheroes.", answer: "pretended", base: "pretend", hint: "p________", ja: "ふりをする" },
         { sentence: "Please ___ your shoes before entering the room.", answer: "remove", base: "remove", hint: "r_____", ja: "取り除く" },
@@ -30,7 +30,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 2",
+      name: "Day 2",
       items: [
         { sentence: "Please ___ the plastic from the paper waste.", answer: "separate", base: "separate", hint: "s_______", ja: "分ける、分離する" },
         { sentence: "Yesterday, she ___ to finish the report on time.", answer: "managed", base: "manage", hint: "m______", ja: "なんとかやり遂げる、管理する" },
@@ -44,7 +44,6 @@ module.exports = {
         { sentence: "Loud noises ___ me when I'm studying.", answer: "bother", base: "bother", hint: "b_____", ja: "悩ます、わざわざ～する" },
         { sentence: "Please don't ___ answers from your classmate.", answer: "copy", base: "copy", hint: "c___", ja: "複写する、まねる" },
         { sentence: "Last night, he ___ on paying for dinner.", answer: "insisted", base: "insist", hint: "i_______", ja: "強く主張する" },
-        { sentence: "You can ___ the files from any computer.", answer: "access", base: "access", hint: "a_____", ja: "アクセスする、利用する" },
         { sentence: "Be quiet as you ___ the sleeping baby.", answer: "approach", base: "approach", hint: "a_______", ja: "近づく" },
         { sentence: "Please ___ me to call the dentist.", answer: "remind", base: "remind", hint: "r_____", ja: "思い出させる" },
         { sentence: "The two brothers often ___ about small things.", answer: "argue", base: "argue", hint: "a____", ja: "言い争う、主張する" },
@@ -55,7 +54,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 3",
+      name: "Day 3",
       items: [
         { sentence: "She hired a ___ to help with her math.", answer: "tutor", base: "tutor", hint: "t____", ja: "家庭教師、個別指導者" },
         { sentence: "He made a good ___ at the interview.", answer: "impression", base: "impression", hint: "i_________", ja: "印象" },
@@ -80,7 +79,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 4",
+      name: "Day 4",
       items: [
         { sentence: "Call this number in case of an ___.", answer: "emergency", base: "emergency", hint: "e________", ja: "緊急事態" },
         { sentence: "She deserves ___ for her hard work.", answer: "credit", base: "credit", hint: "c_____", ja: "信用、功績、クレジット" },
@@ -105,7 +104,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 5",
+      name: "Day 5",
       items: [
         { sentence: "We wore ___ clothes at the festival.", answer: "traditional", base: "traditional", hint: "t__________", ja: "伝統的な" },
         { sentence: "The volunteer work gave her ___ experience.", answer: "valuable", base: "valuable", hint: "v_______", ja: "貴重な、価値のある" },
@@ -130,7 +129,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 6",
+      name: "Day 6",
       items: [
         { sentence: "There is an ___ charge for late delivery.", answer: "additional", base: "additional", hint: "a_________", ja: "追加の" },
         { sentence: "We need a ___ surface to set up the tent.", answer: "flat", base: "flat", hint: "f___", ja: "平らな" },
@@ -155,7 +154,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 7",
+      name: "Day 7",
       items: [
         { sentence: "The train left at ___ nine o'clock.", answer: "exactly", base: "exactly", hint: "e______", ja: "正確に、ちょうど" },
         { sentence: "Try to eat ___ and exercise more.", answer: "less", base: "less", hint: "l___", ja: "より少なく" },
@@ -180,7 +179,7 @@ module.exports = {
       ],
     },
     {
-      name: "Series 8",
+      name: "Day 8",
       items: [
         { sentence: "Please call me ___ if there is a problem.", answer: "immediately", base: "immediately", hint: "i__________", ja: "すぐに" },
         { sentence: "We had dinner and went for a walk ___.", answer: "afterward", base: "afterward", hint: "a________", ja: "あとで" },
