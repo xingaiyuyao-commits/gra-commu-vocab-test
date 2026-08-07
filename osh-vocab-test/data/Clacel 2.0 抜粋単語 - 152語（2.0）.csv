@@ -1,0 +1,152 @@
+VERB01 10,NOUN01,ADJ01,ADV01,,pretend
+0165 pretend,0314 tutor,0821 independent,1005 rarely,,remove
+0166 remove,0319 impression,0825 traditional,1008 once,,stand
+0169 stand,0326 residence,0826 valuable,1009 originally,,concern
+0173 concern,0336 version,0829 professional,1010 exactly,,recognize
+0174 recognize,0341 earth,0836 exact,1012 less,,dig
+0179 dig,0348 effect,0837 common,1013 hopefully,,spread
+0181 spread,0354 effort,0843 raw ,1016 mostly,,disturb
+0186 disturb,0362 aisle,0844 public,1018 completely ,,handle
+0188 handle,NOUN02,0845 healthy,1021 nicely,,waste
+0191 waste,0365 activity ,0856 likely,1026 rather,,arrange
+VERB02,0366 character ,0858 similar,ADV02,,seek
+0192 arrange,0380 energy,ADJ02,1027 pretty,,supply
+0194 seek,0386 origin,0860 basic,1028 abroad,,divide
+0201 supply,0392 objecton,0870 roast,1033 alone,,leave
+0203 divide,0403 method,0873 round,1036 yet,,follow
+0208 leave,0405 thought,0876 enough,1040 easily,,draw
+0209 follow,0409 state,0877 pleasant,1042 anymore,,cover
+0217 draw,0411 nature,0883 specific,1043 anytime,,shape
+0218 cover,0415 application ,0894 comfortable ,1045 though,,remain
+0222 shape,0428 value,0895 whole,1049 heavily,,separate
+0230 remain,0435 situation ,0901 asleep,1056 almost,,manage
+VERB03,NOUN03,ADJ03,1066 eventually,,force
+0231 separate ,0442 emergency ,0904 brand-new,1068 hardly,,miss
+0236 manage,0460 credit,0905 additional ,1070 quite,,require
+0238 force,0466 surface,0914 flat,1071 immediately,,cost
+0239 miss,0468 bill,0917 well-known,1074 afterward,,belong
+0242 require,0483 matter,0924 violent,1080 instead,,describe
+0244 cost,0488 amusement ,0925 crowded,STEP1 OTHERS その他,,practice
+0250 belong,0495 harmony,0928 few,1084 unless,,bother
+0253 describe,0504 view,0929 narrow,1085 although,,copy
+0257 practice,NOUN04,ADJ04,1089 except,,insist
+,0511 behavior,0932 thin,1090 behind,,access
+VERB04,0526 pause,0941 close,1091 beyond,,approach
+0265 bother,0533 technique,0949 certain,1095 without,,remind
+copy,0535 trend,0950 other ,1096 unlike,,argue
+0270 insist,0543 degree,0951 typical,（単語カードにないが動画で説明しているもの↓）,,perform
+ 0271 access,0549 accident,0958 afraid,1086 whenever,,cancel
+0281 approach ,0568 laundry,0960 following,1088 within,,prevent
+0288 remind,0571 presentation ,0966 direct,1096 unlike,,carry
+0291 argue,0573 fear,0968 worth,接続詞・前置詞・代名詞・助動詞は「単語勉強」として学ぶのではなく「文法勉強」として学ぶべき。暗記ではなく仕組みを理解しないと記憶しにくいので単語帳にこれらが載っていたら、一旦おいて勉強するのもあり。,,tutor
+0295 perform,0574 spot,0976 empty,,,impression
+0296 cancel,0601 instruction,,,,residence
+0300 prevent,,40,,,version
+0309 carry,40,,,,earth
+,,,,,effect
+40,,,,,effort
+,,,,,aisle
+,,,34,,activity
+,,,,,character
+,,,,,energy
+,,,,,origin
+,,,,,objection
+,,,,,method
+,,,,,thought
+,,,,,state
+,,,,,nature
+,,,,,application
+,,,,,value
+,,,,,situation
+,,,,,emergency
+,,,,,credit
+,,,,,surface
+,,,,,bill
+,,,,,matter
+,,,,,amusement
+,,,,,harmony
+,,,,,view
+,,,,,behavior
+,,,,,pause
+,,,,,technique
+,,,,,trend
+,,,,,degree
+,,,,,accident
+,,,,,laundry
+,,,,,presentation
+,,,,,fear
+,,,,,spot
+,,,,,instruction
+,,,,,independent
+,,,,,traditional
+,,,,,valuable
+,,,,,professional
+,,,,,exact
+,,,,,common
+,,,,,raw
+,,,,,public
+,,,,,healthy
+,,,,,likely
+,,,,,similar
+,,,,,basic
+,,,,,roast
+,,,,,round
+,,,,,enough
+,,,,,pleasant
+,,,,,specific
+,,,,,comfortable
+,,,,,whole
+,,,,,asleep
+,,,,,brand-new
+,,,,,additional
+,,,,,flat
+,,,,,well-known
+,,,,,violent
+,,,,,crowded
+,,,,,few
+,,,,,narrow
+,,,,,thin
+,,,,,close
+,,,,,certain
+,,,,,other
+,,,,,typical
+,,,,,afraid
+,,,,,following
+,,,,,direct
+,,,,,worth
+,,,,,empty
+,,,,,rarely
+,,,,,once
+,,,,,originally
+,,,,,exactly
+,,,,,less
+,,,,,hopefully
+,,,,,mostly
+,,,,,completely
+,,,,,nicely
+,,,,,rather
+,,,,,pretty
+,,,,,abroad
+,,,,,alone
+,,,,,yet
+,,,,,easily
+,,,,,anymore
+,,,,,anytime
+,,,,,though
+,,,,,heavily
+,,,,,almost
+,,,,,eventually
+,,,,,hardly
+,,,,,quite
+,,,,,immediately
+,,,,,afterward
+,,,,,instead
+,,,,,unless
+,,,,,although
+,,,,,except
+,,,,,behind
+,,,,,beyond
+,,,,,without
+,,,,,unlike
+,,,,,whenever
+,,,,,within
