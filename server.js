@@ -540,6 +540,10 @@ function validateWordtestsData(data) {
       if (!it.sentence || !it.sentence.includes("___")) errors.push(`${tag}: 例文に ___ がありません`);
       if (!it.answer || !/^[a-z][a-z'-]*$/.test(it.answer.toLowerCase()))
         errors.push(`${tag}: answer の形式が不正です`);
+      if (it.altAnswers !== undefined) {
+        if (!Array.isArray(it.altAnswers) || it.altAnswers.some((a) => !/^[a-z][a-z'-]*$/.test(String(a).toLowerCase())))
+          errors.push(`${tag}: altAnswers の形式が不正です`);
+      }
       if (!it.base || !/^[a-z][a-z'-]*$/.test(it.base.toLowerCase())) errors.push(`${tag}: base の形式が不正です`);
       if (!it.ja) errors.push(`${tag}: ja（日本語訳）がありません`);
       const base = (it.base || "").toLowerCase();
@@ -572,7 +576,10 @@ function serializeWordtestsFile(data, filePath) {
     s.items.forEach((it) => {
       const answer = it.answer.toLowerCase();
       const base = it.base.toLowerCase();
-      out += `        { sentence: ${JSON.stringify(it.sentence)}, answer: ${JSON.stringify(answer)}, base: ${JSON.stringify(base)}, hint: ${JSON.stringify(makeHint(answer))}, ja: ${JSON.stringify(it.ja)} },\n`;
+      const altPart = Array.isArray(it.altAnswers) && it.altAnswers.length
+        ? `, altAnswers: ${JSON.stringify(it.altAnswers.map((a) => String(a).toLowerCase()))}`
+        : "";
+      out += `        { sentence: ${JSON.stringify(it.sentence)}, answer: ${JSON.stringify(answer)}${altPart}, base: ${JSON.stringify(base)}, hint: ${JSON.stringify(makeHint(answer))}, ja: ${JSON.stringify(it.ja)} },\n`;
     });
     out += "      ],\n";
     out += "    },\n";
@@ -636,6 +643,15 @@ function quizPlayersUpdate(roomCode) {
   });
 }
 
+// 例文に時制を示す語がなく現在形・過去形どちらも文法的に成立してしまう設問は、
+// altAnswers に許容する別解（三単現形など）を列挙しておくと両方を正解扱いにできる。
+function quizAnswerMatches(q, submitted) {
+  const mine = String(submitted || "").trim().toLowerCase();
+  if (!mine) return false;
+  if (mine === q.answer) return true;
+  return Array.isArray(q.altAnswers) && q.altAnswers.includes(mine);
+}
+
 function quizHint(base) {
   return base[0] + "_".repeat(base.length - 1);
 }
@@ -682,7 +698,7 @@ function quizMaybeFinish(roomCode) {
   room.results = {
     perfect,
     others,
-    review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, ja: q.ja })),
+    review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, altAnswers: q.altAnswers, ja: q.ja })),
   };
   io.to(roomCode).emit("quiz:results", room.results);
 }
@@ -800,7 +816,7 @@ io.on("connection", (socket) => {
     if (!player || player.submittedAt !== null) return;
     const arr = Array.isArray(answers) ? answers : [];
     player.score = room.questions.reduce(
-      (n, q, i) => n + (String(arr[i] || "").trim().toLowerCase() === q.answer ? 1 : 0),
+      (n, q, i) => n + (quizAnswerMatches(q, arr[i]) ? 1 : 0),
       0
     );
     player.submittedAt = Date.now();

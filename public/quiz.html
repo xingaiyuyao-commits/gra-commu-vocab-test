@@ -492,7 +492,7 @@
     $("encourage-card").style.display = iAmPerfect ? "none" : "";
     $("review").innerHTML = review.map((r, i) => {
       const mine = (answers[i] || "").trim().toLowerCase();
-      const ok = mine === r.answer;
+      const ok = mine === r.answer || (Array.isArray(r.altAnswers) && r.altAnswers.includes(mine));
       const mineLabel = mine ? `あなたの答え: ${escapeHtml(mine)}` : "あなたの答え: （空欄）";
       return `<div class="review-item">
         <div>${i + 1}. ${r.sentence.replace("___", `<strong>${r.answer}</strong>`)}</div>
