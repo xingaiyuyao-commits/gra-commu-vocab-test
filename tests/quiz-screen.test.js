@@ -181,44 +181,62 @@ test("テスト画面: 例文の日本語訳がない設問では空欄になる
   assert.equal(document.getElementById("q-sentence-ja").textContent, "");
 });
 
-test("待機画面: ルーム作成者には結果へ進むボタンが表示される", () => {
+test("待機画面: ルーム作成者には結果発表ボタンが表示されるが、全員提出が揃うまでは押せない", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
-  fireSocketEvent("quiz:playersUpdate", {
-    hostId: "me",
-    hostName: "Tina",
-    players: [{ id: "me", name: "Tina", submitted: false }],
-  });
-  // playerIdはloadQuizPage内でランダム生成されるため、hostIdを実際のplayerIdに合わせて再送する
+  // playerIdはloadQuizPage内でランダム生成されるため、hostIdを実際のplayerIdに合わせて送る
   const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
     players: [{ id: actualPlayerId, name: "Tina", submitted: false }],
   });
-  assert.notEqual(document.getElementById("btn-force-finish").style.display, "none");
+  assert.notEqual(document.getElementById("btn-reveal-results").style.display, "none");
+  assert.equal(document.getElementById("btn-reveal-results").disabled, true);
 });
 
-test("待機画面: ホスト以外には結果へ進むボタンが表示されない", () => {
+test("待機画面: ホスト以外には結果発表ボタンが表示されない", () => {
   const { document, fireSocketEvent } = loadQuizPage();
   fireSocketEvent("quiz:playersUpdate", {
     hostId: "someone-else",
     hostName: "Aica",
     players: [{ id: "someone-else", name: "Aica", submitted: false }],
   });
-  assert.equal(document.getElementById("btn-force-finish").style.display, "none");
+  assert.equal(document.getElementById("btn-reveal-results").style.display, "none");
 });
 
-test("待機画面: 結果へ進むボタンを押すとquiz:forceFinishが送信される", () => {
+test("待機画面: 全員提出が揃うとquiz:readyToRevealでボタンが押せるようになる", () => {
+  const { window, document, fireSocketEvent } = loadQuizPage();
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: actualPlayerId,
+    hostName: "Tina",
+    players: [{ id: actualPlayerId, name: "Tina", submitted: true }],
+  });
+  assert.equal(document.getElementById("btn-reveal-results").disabled, true);
+
+  fireSocketEvent("quiz:readyToReveal");
+  assert.equal(document.getElementById("btn-reveal-results").disabled, false);
+});
+
+test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信される（制限時間終了だけでは自動発表しない）", () => {
   const { window, document, fireSocketEvent, emitted } = loadQuizPage();
   const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
-    players: [{ id: actualPlayerId, name: "Tina", submitted: false }],
+    players: [{ id: actualPlayerId, name: "Tina", submitted: true }],
   });
+  fireSocketEvent("quiz:readyToReveal");
+
+  assert.equal(
+    emitted.some((e) => e.event === "quiz:revealResults"),
+    false,
+    "readyToRevealが届いただけでは自動送信されない"
+  );
+
   window.confirm = () => true;
-  document.getElementById("btn-force-finish").dispatchEvent(new window.Event("click", { bubbles: true }));
-  assert.ok(emitted.some((e) => e.event === "quiz:forceFinish"));
+  document.getElementById("btn-reveal-results").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.ok(emitted.some((e) => e.event === "quiz:revealResults"));
 });
 
 test("結果画面: 最上部に本人の点数と正答率が表示される", () => {

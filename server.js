@@ -661,6 +661,8 @@ function quizSanitizedQuestions(room) {
   return room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja, sentenceJa: q.sentenceJa }));
 }
 
+// 制限時間が来たら、まだ提出していない参加者を0点扱いで確定させる。
+// ただしこれだけでは結果発表は行わない（発表はホストのquiz:revealResults操作を待つ）。
 function quizForceFinish(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
@@ -670,10 +672,12 @@ function quizForceFinish(roomCode) {
       p.submittedAt = Date.now();
     }
   }
-  quizMaybeFinish(roomCode);
+  quizCheckAllSubmitted(roomCode);
 }
 
-function quizMaybeFinish(roomCode) {
+// 全員の提出が揃ったことを検知し、結果発表が可能になったことをクライアントへ知らせる。
+// 結果の計算・発表そのものはquizRevealResults()（ホストの操作）が行う。
+function quizCheckAllSubmitted(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
   const players = Object.values(room.players);
@@ -682,6 +686,15 @@ function quizMaybeFinish(roomCode) {
     clearTimeout(room.timeoutHandle);
     room.timeoutHandle = null;
   }
+  io.to(roomCode).emit("quiz:readyToReveal");
+}
+
+// ホストの操作で結果発表を確定させる。全員提出済みであることを再確認してから発表する。
+function quizRevealResults(roomCode) {
+  const room = quizRooms[roomCode];
+  if (!room || room.phase !== "playing") return;
+  const players = Object.values(room.players);
+  if (players.length === 0 || !players.every((p) => p.submittedAt !== null)) return;
   room.phase = "finished";
   const total = room.questions.length;
   const entries = Object.entries(room.players).map(([id, p]) => ({
@@ -718,7 +731,7 @@ function quizFinalizePlayerLeave(roomCode, playerId) {
   }
   if (room.host === playerId) room.host = Object.keys(room.players)[0];
   quizPlayersUpdate(roomCode);
-  if (room.phase === "playing") quizMaybeFinish(roomCode);
+  if (room.phase === "playing") quizCheckAllSubmitted(roomCode);
 }
 
 io.on("connection", (socket) => {
@@ -775,6 +788,7 @@ io.on("connection", (socket) => {
       const players = Object.values(room.players);
       res.submittedCount = players.filter((p) => p.submittedAt !== null).length;
       res.totalCount = players.length;
+      res.allSubmitted = res.submittedCount === res.totalCount;
     } else if (room.phase === "finished" && room.results) {
       res.results = room.results;
     }
@@ -826,15 +840,16 @@ io.on("connection", (socket) => {
       submitted: players.filter((p) => p.submittedAt !== null).length,
       total: players.length,
     });
-    quizMaybeFinish(roomCode);
+    quizCheckAllSubmitted(roomCode);
   });
 
-  // ホストが制限時間を待たずに未提出者を0点扱いにして結果発表へ進めるための操作
-  socket.on("quiz:forceFinish", () => {
+  // ホストの操作で結果発表を確定させる。全員提出済みであることをここでも確認する
+  // （制限時間が来ても自動では発表せず、必ずホストのこの操作を経由する）
+  socket.on("quiz:revealResults", () => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
     if (!room || room.host !== socket.data.quizPlayerId || room.phase !== "playing") return;
-    quizForceFinish(roomCode);
+    quizRevealResults(roomCode);
   });
 
   socket.on("quiz:playAgain", () => {

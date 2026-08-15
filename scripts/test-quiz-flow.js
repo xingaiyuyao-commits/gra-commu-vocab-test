@@ -50,6 +50,7 @@ async function main() {
     const items = WORDTESTS.ielts.series[0].items;
     const correctAnswers = qh.questions.map((q) => items.find((it) => it.sentence === q.sentence).answer);
 
+    const readyToRevealP1 = new Promise((res) => host.once("quiz:readyToReveal", res));
     const resultsBoth = Promise.all([
       new Promise((res) => host.once("quiz:results", res)),
       new Promise((res) => guest.once("quiz:results", res)),
@@ -59,6 +60,8 @@ async function main() {
     const prog = await progressP;
     check(prog.submitted === 1 && prog.total === 2, "提出状況 1/2 が配信される");
     guest.emit("quiz:submit", { answers: Array(20).fill("") });
+    await readyToRevealP1;
+    host.emit("quiz:revealResults");
     const [rh] = await resultsBoth;
     check(rh.perfect.length === 1 && rh.perfect[0].name === "ホスト", "大文字・空白混じりでも正解扱いで満点者に入る");
     check(rh.others.length === 1 && rh.others[0].name === "参加者" && rh.others[0].score === 0, "空欄は0点でその他の参加者に入る");
@@ -79,9 +82,12 @@ async function main() {
     const started2 = new Promise((res) => h2.once("quiz:started", res));
     h2.emit("quiz:startGame", { seriesIndex: 2 });
     await started2;
+    const readyToRevealP2 = new Promise((res) => h2.once("quiz:readyToReveal", res));
     const results2 = new Promise((res) => h2.once("quiz:results", res));
     h2.emit("quiz:submit", { answers: Array(20).fill("x") });
     g2.emit("quiz:leave"); // 未提出のまま明示的に退出（単なる切断＝リロードとは区別される）
+    await readyToRevealP2;
+    h2.emit("quiz:revealResults");
     const r2 = await results2;
     const combined2 = [...r2.perfect, ...r2.others];
     check(combined2.length === 1 && combined2[0].name === "A", "未提出者の退出後、残りだけで結果発表");
@@ -107,18 +113,22 @@ async function main() {
     check(Array.isArray(rejoin.questions) && rejoin.questions.length === 20, "再接続時に問題一式を再送してくれる");
     check(typeof rejoin.endsAt === "number" && rejoin.endsAt > Date.now(), "再接続時に残り時間の終了時刻も届く");
 
-    // 再接続後も通常どおり提出できる
+    // 再接続後も通常どおり提出でき、ホストの操作で結果発表される
+    const readyToRevealP3 = new Promise((res) => h3.once("quiz:readyToReveal", res));
     const resultsBoth3 = Promise.all([
       new Promise((res) => h3.once("quiz:results", res)),
       new Promise((res) => g3b.once("quiz:results", res)),
     ]);
     h3.emit("quiz:submit", { answers: Array(20).fill("x") });
     g3b.emit("quiz:submit", { answers: Array(20).fill("y") });
+    await readyToRevealP3;
+    h3.emit("quiz:revealResults");
     await resultsBoth3;
     check(true, "再接続後も提出でき結果発表まで進む");
     h3.disconnect(); g3b.disconnect();
 
-    // --- シナリオ4: ホストが未提出者を残したままquiz:forceFinishで結果発表へ進められる ---
+    // --- シナリオ4: 結果発表は必ずホストのquiz:revealResults操作を経由し、
+    //     かつ全員提出が揃うまではその操作自体が無視される ---
     const h4 = connect();
     const g4 = connect();
     const c4 = await new Promise((res) => h4.emit("quiz:createRoom", { category: "clacel", name: "A" }, res));
@@ -131,26 +141,44 @@ async function main() {
       "配布される設問に例文の日本語訳(sentenceJa)が含まれる"
     );
 
-    // ホスト以外からのforceFinishは無視される
-    g4.emit("quiz:forceFinish");
+    // ホストのみ提出した時点でquiz:revealResultsを送っても、
+    // 参加者が未提出のため結果発表は行われない（自動でも手動でも進まない）
+    h4.emit("quiz:submit", { answers: Array(20).fill("x") });
+    await new Promise((res) => h4.once("quiz:submitProgress", res));
+    h4.emit("quiz:revealResults");
+    const prematureAttempt = await Promise.race([
+      new Promise((res) => h4.once("quiz:results", () => res("fired"))),
+      new Promise((res) => setTimeout(() => res("not-fired"), 300)),
+    ]);
+    check(prematureAttempt === "not-fired", "全員提出が揃う前はquiz:revealResultsを送っても結果発表されない");
+
+    // 参加者も提出して全員分が揃うと、quiz:readyToRevealが届く（結果はまだ発表されない）
+    const readyToRevealP = new Promise((res) => h4.once("quiz:readyToReveal", res));
+    g4.emit("quiz:submit", { answers: Array(20).fill("y") });
+    await readyToRevealP;
+    const stillWaiting = await Promise.race([
+      new Promise((res) => h4.once("quiz:results", () => res("fired"))),
+      new Promise((res) => setTimeout(() => res("not-fired"), 300)),
+    ]);
+    check(stillWaiting === "not-fired", "全員提出後もホストが操作するまで結果は自動発表されない");
+
+    // ホスト以外のquiz:revealResultsは無視される
+    g4.emit("quiz:revealResults");
     const guestAttempt = await Promise.race([
       new Promise((res) => h4.once("quiz:results", () => res("fired"))),
       new Promise((res) => setTimeout(() => res("not-fired"), 300)),
     ]);
-    check(guestAttempt === "not-fired", "ホスト以外のquiz:forceFinishは無視される");
+    check(guestAttempt === "not-fired", "ホスト以外のquiz:revealResultsは無視される");
 
-    // ホストのみ提出し、参加者は未提出のままforceFinishで結果発表へ進める
+    // ホストがquiz:revealResultsを送ると結果発表される
     const results4 = Promise.all([
       new Promise((res) => h4.once("quiz:results", res)),
       new Promise((res) => g4.once("quiz:results", res)),
     ]);
-    h4.emit("quiz:submit", { answers: Array(20).fill("x") });
-    h4.emit("quiz:forceFinish");
+    h4.emit("quiz:revealResults");
     const [r4h] = await results4;
     const combined4 = [...r4h.perfect, ...r4h.others];
-    check(combined4.length === 2, "forceFinish後は未提出者も含めて全員分の結果が出る");
-    const guestResult4 = combined4.find((e) => e.name === "B");
-    check(!!guestResult4 && guestResult4.score === 0, "未提出のままforceFinishされた参加者は0点になる");
+    check(combined4.length === 2, "ホストのquiz:revealResultsで全員分の結果が出る");
     h4.disconnect(); g4.disconnect();
   } finally {
     server.kill();

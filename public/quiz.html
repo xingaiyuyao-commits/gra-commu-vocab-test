@@ -238,7 +238,7 @@
       <p style="text-align:center; color:var(--muted-foreground);">
         提出済み <span id="waiting-count"></span> — 全員の提出を待っています…
       </p>
-      <button id="btn-force-finish" style="margin-top:14px; display:none;">今すぐ結果発表に進む</button>
+      <button id="btn-reveal-results" style="margin-top:14px; display:none;" disabled>結果発表を見る</button>
     </div>
     <button class="leave" onclick="leaveRoom(false)">ルームを退出する</button>
   </div>
@@ -433,13 +433,17 @@
     $("lobby-players").innerHTML = players.map((p) =>
       `<li><span>${escapeHtml(p.name)}${p.id === hostId ? " 👑" : ""}</span><span>${p.submitted ? "提出済み ✅" : ""}</span></li>`).join("");
     $("again-card").style.display = isHost ? "" : "none";
-    $("btn-force-finish").style.display = isHost ? "" : "none";
+    $("btn-reveal-results").style.display = isHost ? "" : "none";
     $("quiz-players").textContent = `参加者 ${players.length}人: ${players.map((p) => p.name).join("、")}`;
   });
 
-  $("btn-force-finish").addEventListener("click", () => {
-    if (!confirm("未提出の人は0点として結果を発表します。よろしいですか？")) return;
-    socket.emit("quiz:forceFinish");
+  socket.on("quiz:readyToReveal", () => {
+    $("btn-reveal-results").disabled = false;
+  });
+
+  $("btn-reveal-results").addEventListener("click", () => {
+    if (!confirm("結果を発表しますか？")) return;
+    socket.emit("quiz:revealResults");
   });
 
   $("btn-start").addEventListener("click", () => {
@@ -457,6 +461,7 @@
     quizEndsAt = endsAt;
     $("quiz-set").textContent = setLabel;
     $("submit-status").textContent = "";
+    $("btn-reveal-results").disabled = true;
     renderQuestion();
     show("screen-quiz");
     $("answer").focus();
@@ -604,6 +609,7 @@
         timerInterval = setInterval(updateTimerDisplay, 1000);
       } else if (res.phase === "playing" && res.submitted) {
         $("waiting-count").textContent = `${res.submittedCount} / ${res.totalCount}人`;
+        $("btn-reveal-results").disabled = !res.allSubmitted;
         show("screen-waiting");
       } else if (res.phase === "finished" && res.results) {
         const restored = loadSavedAnswers(currentRoomCode, res.results.review.length);
