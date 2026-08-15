@@ -17,7 +17,7 @@ SERIES[1] = dict(
         ("conceive", "/kənˈsiːv/", "verb", "conceives, conceived", "思いつく、想像する", "It is hard to <i>conceive</i> of a society without any rules.", "ルールが全くない社会を思い描くのは難しい。"),
         ("exploit", "/ɪkˈsplɔɪt/", "verb", "exploits, exploited", "活用する、搾取する", "The company currently <i>exploits</i> natural resources in the region.", "その会社は現在、その地域の天然資源を活用している。"),
         ("constrain", "/kənˈstreɪn/", "verb", "constrains, constrained", "制約する", "Last year, limited funding <i>constrained</i> the scope of the research.", "昨年、限られた資金が研究の範囲を制約した。"),
-        ("derive", "/dɪˈraɪv/", "verb", "derives, derived", "（～から）得る、由来する", "Historically, many modern words still <i>derive</i> from Latin and Greek.", "歴史的に、多くの現代語は今でもラテン語やギリシャ語に由来する。"),
+        ("derive", "/dɪˈraɪv/", "verb", "derives, derived", "（～から）得る、由来する", "Many modern English words are <i>derived</i> from Latin and Greek.", "多くの現代英語の単語はラテン語やギリシャ語に由来している。"),
         ("induce", "/ɪnˈduːs/", "verb", "induces, induced", "引き起こす、誘発する", "Certain chemicals can <i>induce</i> changes in cell growth.", "特定の化学物質は細胞の成長に変化を引き起こすことがある。"),
         ("depict", "/dɪˈpɪkt/", "verb", "depicts, depicted", "描く、表現する", "This painting still <i>depicts</i> a busy market in the old city.", "この絵は今も旧市街の賑やかな市場を描いている。"),
         ("assert", "/əˈsɝːt/", "verb", "asserts, asserted", "主張する、断言する", "To this day, the author <i>asserts</i> that education reduces inequality.", "今日に至るまで、その著者は教育が不平等を減らすと主張している。"),

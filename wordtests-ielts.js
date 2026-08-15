@@ -17,7 +17,7 @@ module.exports = {
         { sentence: "It is hard to ___ of a society without any rules.", answer: "conceive", base: "conceive", hint: "c_______", ja: "思いつく、想像する", sentenceJa: "ルールが全くない社会を思い描くのは難しい。" },
         { sentence: "The company currently ___ natural resources in the region.", answer: "exploits", base: "exploit", hint: "e______", ja: "活用する、搾取する", sentenceJa: "その会社は現在、その地域の天然資源を活用している。" },
         { sentence: "Last year, limited funding ___ the scope of the research.", answer: "constrained", base: "constrain", hint: "c________", ja: "制約する", sentenceJa: "昨年、限られた資金が研究の範囲を制約した。" },
-        { sentence: "Historically, many modern words still ___ from Latin and Greek.", answer: "derive", base: "derive", hint: "d_____", ja: "（～から）得る、由来する", sentenceJa: "歴史的に、多くの現代語は今でもラテン語やギリシャ語に由来する。" },
+        { sentence: "Many modern English words are ___ from Latin and Greek.", answer: "derived", base: "derive", hint: "d_____", ja: "（～から）得る、由来する", sentenceJa: "多くの現代英語の単語はラテン語やギリシャ語に由来している。" },
         { sentence: "Certain chemicals can ___ changes in cell growth.", answer: "induce", base: "induce", hint: "i_____", ja: "引き起こす、誘発する", sentenceJa: "特定の化学物質は細胞の成長に変化を引き起こすことがある。" },
         { sentence: "This painting still ___ a busy market in the old city.", answer: "depicts", base: "depict", hint: "d_____", ja: "描く、表現する", sentenceJa: "この絵は今も旧市街の賑やかな市場を描いている。" },
         { sentence: "To this day, the author ___ that education reduces inequality.", answer: "asserts", base: "assert", hint: "a_____", ja: "主張する、断言する", sentenceJa: "今日に至るまで、その著者は教育が不平等を減らすと主張している。" },
