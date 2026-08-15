@@ -546,6 +546,7 @@ function validateWordtestsData(data) {
       }
       if (!it.base || !/^[a-z][a-z'-]*$/.test(it.base.toLowerCase())) errors.push(`${tag}: base の形式が不正です`);
       if (!it.ja) errors.push(`${tag}: ja（日本語訳）がありません`);
+      if (!it.sentenceJa) errors.push(`${tag}: sentenceJa（例文和訳）がありません`);
       const base = (it.base || "").toLowerCase();
       if (seen.has(base)) errors.push(`${s.name}: base が重複しています（${base}）`);
       seen.add(base);
@@ -579,7 +580,7 @@ function serializeWordtestsFile(data, filePath) {
       const altPart = Array.isArray(it.altAnswers) && it.altAnswers.length
         ? `, altAnswers: ${JSON.stringify(it.altAnswers.map((a) => String(a).toLowerCase()))}`
         : "";
-      out += `        { sentence: ${JSON.stringify(it.sentence)}, answer: ${JSON.stringify(answer)}${altPart}, base: ${JSON.stringify(base)}, hint: ${JSON.stringify(makeHint(answer))}, ja: ${JSON.stringify(it.ja)} },\n`;
+      out += `        { sentence: ${JSON.stringify(it.sentence)}, answer: ${JSON.stringify(answer)}${altPart}, base: ${JSON.stringify(base)}, hint: ${JSON.stringify(makeHint(answer))}, ja: ${JSON.stringify(it.ja)}, sentenceJa: ${JSON.stringify(it.sentenceJa)} },\n`;
     });
     out += "      ],\n";
     out += "    },\n";
@@ -657,7 +658,7 @@ function quizHint(base) {
 }
 
 function quizSanitizedQuestions(room) {
-  return room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja }));
+  return room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja, sentenceJa: q.sentenceJa }));
 }
 
 function quizForceFinish(roomCode) {
@@ -698,7 +699,7 @@ function quizMaybeFinish(roomCode) {
   room.results = {
     perfect,
     others,
-    review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, altAnswers: q.altAnswers, ja: q.ja })),
+    review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, altAnswers: q.altAnswers, ja: q.ja, sentenceJa: q.sentenceJa })),
   };
   io.to(roomCode).emit("quiz:results", room.results);
 }
@@ -826,6 +827,14 @@ io.on("connection", (socket) => {
       total: players.length,
     });
     quizMaybeFinish(roomCode);
+  });
+
+  // ホストが制限時間を待たずに未提出者を0点扱いにして結果発表へ進めるための操作
+  socket.on("quiz:forceFinish", () => {
+    const roomCode = socket.data.quizRoomCode;
+    const room = quizRooms[roomCode];
+    if (!room || room.host !== socket.data.quizPlayerId || room.phase !== "playing") return;
+    quizForceFinish(roomCode);
   });
 
   socket.on("quiz:playAgain", () => {

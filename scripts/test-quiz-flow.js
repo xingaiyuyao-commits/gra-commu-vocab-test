@@ -117,6 +117,41 @@ async function main() {
     await resultsBoth3;
     check(true, "再接続後も提出でき結果発表まで進む");
     h3.disconnect(); g3b.disconnect();
+
+    // --- シナリオ4: ホストが未提出者を残したままquiz:forceFinishで結果発表へ進められる ---
+    const h4 = connect();
+    const g4 = connect();
+    const c4 = await new Promise((res) => h4.emit("quiz:createRoom", { category: "clacel", name: "A" }, res));
+    await new Promise((res) => g4.emit("quiz:joinRoom", { roomCode: c4.roomCode, name: "B" }, res));
+    const started4 = new Promise((res) => h4.once("quiz:started", res));
+    h4.emit("quiz:startGame", { seriesIndex: 0 });
+    const q4 = await started4;
+    check(
+      typeof q4.questions[0].sentenceJa === "string" && q4.questions[0].sentenceJa.length > 0,
+      "配布される設問に例文の日本語訳(sentenceJa)が含まれる"
+    );
+
+    // ホスト以外からのforceFinishは無視される
+    g4.emit("quiz:forceFinish");
+    const guestAttempt = await Promise.race([
+      new Promise((res) => h4.once("quiz:results", () => res("fired"))),
+      new Promise((res) => setTimeout(() => res("not-fired"), 300)),
+    ]);
+    check(guestAttempt === "not-fired", "ホスト以外のquiz:forceFinishは無視される");
+
+    // ホストのみ提出し、参加者は未提出のままforceFinishで結果発表へ進める
+    const results4 = Promise.all([
+      new Promise((res) => h4.once("quiz:results", res)),
+      new Promise((res) => g4.once("quiz:results", res)),
+    ]);
+    h4.emit("quiz:submit", { answers: Array(20).fill("x") });
+    h4.emit("quiz:forceFinish");
+    const [r4h] = await results4;
+    const combined4 = [...r4h.perfect, ...r4h.others];
+    check(combined4.length === 2, "forceFinish後は未提出者も含めて全員分の結果が出る");
+    const guestResult4 = combined4.find((e) => e.name === "B");
+    check(!!guestResult4 && guestResult4.score === 0, "未提出のままforceFinishされた参加者は0点になる");
+    h4.disconnect(); g4.disconnect();
   } finally {
     server.kill();
   }

@@ -159,6 +159,68 @@ test("提出確認: 制限時間終了時は確認を挟まず自動提出され
   assert.ok(document.getElementById("screen-waiting").classList.contains("active"));
 });
 
+test("テスト画面: 設問の英文の下に例文の日本語訳が表示される", () => {
+  const { document, fireSocketEvent } = loadQuizPage();
+  const questions = [
+    { sentence: "She can't ___ the summer heat.", answer: "stand", base: "stand", hint: "s____", ja: "立つ、耐える", sentenceJa: "彼女は夏の暑さに耐えられない。" },
+  ];
+  fireSocketEvent("quiz:started", {
+    setLabel: "Day 1", total: 1, endsAt: Date.now() + 60000, questions,
+  });
+  assert.equal(document.getElementById("q-sentence-ja").textContent, "彼女は夏の暑さに耐えられない。");
+});
+
+test("テスト画面: 例文の日本語訳がない設問では空欄になる", () => {
+  const { document, fireSocketEvent } = loadQuizPage();
+  const questions = [
+    { sentence: "She can't ___ the summer heat.", answer: "stand", base: "stand", hint: "s____", ja: "立つ、耐える" },
+  ];
+  fireSocketEvent("quiz:started", {
+    setLabel: "Day 1", total: 1, endsAt: Date.now() + 60000, questions,
+  });
+  assert.equal(document.getElementById("q-sentence-ja").textContent, "");
+});
+
+test("待機画面: ルーム作成者には結果へ進むボタンが表示される", () => {
+  const { window, document, fireSocketEvent } = loadQuizPage();
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: "me",
+    hostName: "Tina",
+    players: [{ id: "me", name: "Tina", submitted: false }],
+  });
+  // playerIdはloadQuizPage内でランダム生成されるため、hostIdを実際のplayerIdに合わせて再送する
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: actualPlayerId,
+    hostName: "Tina",
+    players: [{ id: actualPlayerId, name: "Tina", submitted: false }],
+  });
+  assert.notEqual(document.getElementById("btn-force-finish").style.display, "none");
+});
+
+test("待機画面: ホスト以外には結果へ進むボタンが表示されない", () => {
+  const { document, fireSocketEvent } = loadQuizPage();
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: "someone-else",
+    hostName: "Aica",
+    players: [{ id: "someone-else", name: "Aica", submitted: false }],
+  });
+  assert.equal(document.getElementById("btn-force-finish").style.display, "none");
+});
+
+test("待機画面: 結果へ進むボタンを押すとquiz:forceFinishが送信される", () => {
+  const { window, document, fireSocketEvent, emitted } = loadQuizPage();
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: actualPlayerId,
+    hostName: "Tina",
+    players: [{ id: actualPlayerId, name: "Tina", submitted: false }],
+  });
+  window.confirm = () => true;
+  document.getElementById("btn-force-finish").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.ok(emitted.some((e) => e.event === "quiz:forceFinish"));
+});
+
 test("結果画面: 最上部に本人の点数と正答率が表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
   const questions = [
