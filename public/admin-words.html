@@ -79,7 +79,7 @@
   .series-count { font-size: .8rem; color: var(--muted-foreground); font-weight: 400; }
   .item-row {
     display: grid;
-    grid-template-columns: 2.4fr 1fr 1fr 1.4fr auto;
+    grid-template-columns: 2.4fr 1fr 1fr 1.4fr 2fr auto;
     gap: 8px;
     align-items: center;
     margin-bottom: 8px;
@@ -94,7 +94,7 @@
   }
   .del-btn:hover { background: oklch(57.7% .245 27.325 / .1); color: var(--destructive); }
   .add-row-btn { margin-top: 4px; }
-  .col-headers { display: grid; grid-template-columns: 2.4fr 1fr 1fr 1.4fr auto; gap: 8px; margin-bottom: 4px; padding-left: 1.6rem; }
+  .col-headers { display: grid; grid-template-columns: 2.4fr 1fr 1fr 1.4fr 2fr auto; gap: 8px; margin-bottom: 4px; padding-left: 1.6rem; }
   .col-headers span { font-size: .72rem; color: var(--muted-foreground); font-weight: 600; padding-left: 10px; }
   .msg { font-size: .85rem; padding: 10px 12px; border-radius: calc(var(--radius) - 2px); margin-bottom: 14px; }
   .msg.error { background: oklch(57.7% .245 27.325 / .08); color: var(--destructive); white-space: pre-wrap; }
@@ -205,7 +205,7 @@
       <div class="series-block">
         <div class="series-title">${escapeHtml(s.name)} <span class="series-count">(${s.items.length}語)</span></div>
         <div class="col-headers">
-          <span>例文（___ が空所）</span><span>answer</span><span>base</span><span>ja（意味）</span><span></span>
+          <span>例文（___ が空所）</span><span>answer</span><span>base</span><span>ja（意味）</span><span>sentenceJa（例文和訳）</span><span></span>
         </div>
         <div id="items-${si}"></div>
         <button class="btn-secondary add-row-btn" onclick="addItem(${si})">＋ 単語を追加</button>
@@ -224,6 +224,7 @@
           <input value="${escapeHtml(it.answer)}" oninput="updateItem(${si},${ii},'answer',this.value)" />
           <input value="${escapeHtml(it.base)}" oninput="updateItem(${si},${ii},'base',this.value)" />
           <input value="${escapeHtml(it.ja)}" oninput="updateItem(${si},${ii},'ja',this.value)" />
+          <input value="${escapeHtml(it.sentenceJa)}" oninput="updateItem(${si},${ii},'sentenceJa',this.value)" />
           <button class="del-btn" onclick="removeItem(${si},${ii})" title="削除">✕</button>
         </div>
       </div>
@@ -241,7 +242,7 @@
   }
 
   function addItem(si) {
-    currentData.series[si].items.push({ sentence: "___", answer: "", base: "", ja: "" });
+    currentData.series[si].items.push({ sentence: "___", answer: "", base: "", ja: "", sentenceJa: "" });
     renderItems(si);
     renderCounts();
   }
