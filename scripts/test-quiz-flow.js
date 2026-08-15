@@ -26,6 +26,11 @@ async function main() {
 
     const created = await new Promise((res) => host.emit("quiz:createRoom", { category: "ielts", name: "ホスト" }, res));
     check(!!(created.roomCode && created.isHost && created.category === "ielts"), "ルーム作成でルームコードとホスト権が返る");
+    check(
+      Array.isArray(created.seriesNames) &&
+        JSON.stringify(created.seriesNames) === JSON.stringify(WORDTESTS.ielts.series.map((s) => s.name)),
+      "ルーム作成時に実際のDay名一覧(seriesNames)が届く（欠番があっても表示名がずれない）"
+    );
 
     const joined = await new Promise((res) => g1a.emit("quiz:joinRoom", { roomCode: created.roomCode, name: "参加者A" }, res));
     check(joined.roomCode === created.roomCode && joined.isHost === false, "ルームコードで同じロビーに入れる");

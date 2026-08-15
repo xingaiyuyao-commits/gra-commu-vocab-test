@@ -283,8 +283,8 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
-  const SERIES_COUNT = { clacel: 8, ielts: 5, toeic: 7 };
   const CATEGORY_LABEL = { clacel: "Clacel", ielts: "IELTS", toeic: "TOEIC" };
+  let seriesNames = [];
 
   function getPlayerId() {
     let id = localStorage.getItem("quizPlayerId");
@@ -397,6 +397,7 @@
     selectedCategory = res.category;
     currentRoomCode = res.roomCode;
     saveSession(res.roomCode, res.category);
+    seriesNames = res.seriesNames || [];
     $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
     $("lobby-code").textContent = res.roomCode;
     fillSeries();
@@ -420,9 +421,8 @@
 
   // --- ロビー ---
   function fillSeries() {
-    const n = SERIES_COUNT[selectedCategory];
-    $("sel-series").innerHTML = Array.from({ length: n }, (_, i) =>
-      `<option value="${i}">Day ${i + 1}</option>`).join("");
+    $("sel-series").innerHTML = seriesNames.map((name, i) =>
+      `<option value="${i}">${escapeHtml(name)}</option>`).join("");
   }
 
   socket.on("quiz:playersUpdate", ({ hostId, hostName, players }) => {
@@ -596,6 +596,7 @@
       isHost = res.isHost;
       selectedCategory = res.category;
       currentRoomCode = session.roomCode;
+      seriesNames = res.seriesNames || [];
       $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
       $("lobby-code").textContent = session.roomCode;
       fillSeries();

@@ -786,6 +786,7 @@ io.on("connection", (socket) => {
       category: room.category,
       phase: room.phase,
       submitted: player.submittedAt !== null,
+      seriesNames: WORDTESTS[room.category].series.map((s) => s.name),
     };
     if (room.phase === "playing") {
       res.setLabel = room.setLabel;
@@ -906,7 +907,8 @@ io.on("connection", (socket) => {
       leaveTimer: null,
     };
     if (!room.host) room.host = id;
-    cb({ roomCode, isHost: room.host === id, category: room.category, playerId: id });
+    const seriesNames = WORDTESTS[room.category].series.map((s) => s.name);
+    cb({ roomCode, isHost: room.host === id, category: room.category, playerId: id, seriesNames });
     quizPlayersUpdate(roomCode);
   }
 });
