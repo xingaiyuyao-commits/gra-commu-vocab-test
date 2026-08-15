@@ -157,22 +157,22 @@
   <div class="screen" id="screen-entry">
     <div class="card">
       <label for="name">名前</label>
-      <input id="name" maxlength="12" placeholder="コミュニティ名" />
+      <input id="name" maxlength="12" placeholder="コミュニティ名" aria-describedby="entry-error" />
       <div id="create-section">
-        <label>単語帳を選んでルームを作成</label>
+        <label id="category-label">単語帳を選択</label>
         <div class="category-buttons">
-          <button class="cat-btn" data-category="clacel">Clacel</button>
-          <button class="cat-btn" data-category="ielts">IELTS</button>
-          <button class="cat-btn" data-category="toeic">TOEIC</button>
+          <button class="cat-btn" data-category="clacel" aria-pressed="false">Clacel</button>
+          <button class="cat-btn" data-category="ielts" aria-pressed="false">IELTS</button>
+          <button class="cat-btn" data-category="toeic" aria-pressed="false">TOEIC</button>
         </div>
         <button id="btn-create" disabled>ルームを作成</button>
       </div>
       <div id="join-section">
-        <label for="room" style="margin-top:20px">ルームコードで参加</label>
-        <input id="room" maxlength="4" placeholder="例: AB3K" style="text-transform: uppercase;" />
+        <label for="room" style="margin-top:20px">ルームコード</label>
+        <input id="room" maxlength="4" placeholder="例: AB3K" style="text-transform: uppercase;" aria-describedby="entry-error" />
         <button id="btn-join" class="secondary">参加する</button>
       </div>
-      <p class="error" id="entry-error"></p>
+      <p class="error" id="entry-error" role="alert"></p>
     </div>
     <button class="leave" onclick="leaveRoom(false)">← ゲーム選択に戻る</button>
   </div>
@@ -216,6 +216,19 @@
     <button class="leave" onclick="leaveRoom(true)">ルームを退出する</button>
   </div>
 
+  <!-- 提出確認 -->
+  <div class="screen" id="screen-confirm">
+    <div class="card">
+      <p style="font-weight:700; text-align:center; margin-bottom:8px;">提出内容を確認してください</p>
+      <p style="text-align:center;" id="confirm-summary"></p>
+      <p style="text-align:center; color:var(--muted-foreground); font-size:.85rem;" id="confirm-unanswered"></p>
+      <div class="nav-row" style="margin-top:16px;">
+        <button class="back" id="btn-confirm-back">回答に戻る</button>
+        <button id="btn-confirm-submit">この内容で提出</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 待機 -->
   <div class="screen" id="screen-waiting">
     <div class="card">
@@ -229,6 +242,10 @@
 
   <!-- 結果 -->
   <div class="screen" id="screen-results">
+    <div class="card">
+      <p style="text-align:center; font-size:2rem; font-weight:800;" id="personal-score"></p>
+      <p style="text-align:center; color:var(--muted-foreground);" id="personal-accuracy"></p>
+    </div>
     <div class="card">
       <p class="perfect-title">🏆 満点者</p>
       <ul class="rank-list" id="perfect-list"></ul>
@@ -252,6 +269,7 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/ui-logic.js"></script>
 <script>
   const socket = io();
   const $ = (id) => document.getElementById(id);
@@ -353,13 +371,22 @@
     $("btn-join").classList.remove("secondary");
   }
 
+  function updateCreateButtonState() {
+    $("btn-create").disabled = !QuizUi.canCreateRoom($("name").value, selectedCategory);
+  }
+
   document.querySelectorAll(".cat-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       selectedCategory = btn.dataset.category;
-      document.querySelectorAll(".cat-btn").forEach((b) => b.classList.toggle("selected", b === btn));
-      $("btn-create").disabled = false;
+      document.querySelectorAll(".cat-btn").forEach((b) => {
+        b.classList.toggle("selected", b === btn);
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+      updateCreateButtonState();
     });
   });
+
+  $("name").addEventListener("input", updateCreateButtonState);
 
   function onEntered(res) {
     if (res.error) return ($("entry-error").textContent = res.error);
@@ -439,10 +466,19 @@
     $("q-sentence").innerHTML = q.sentence.replace("___", '<span class="blank">___</span>');
     $("answer").value = answers[idx];
     $("btn-back").disabled = idx === 0;
-    $("btn-next").textContent = idx === total - 1 ? "提出する" : "次へ";
+    $("btn-next").textContent = idx === total - 1 ? "回答を確認" : "次へ";
   }
 
   function saveCurrent() { answers[idx] = $("answer").value; persistAnswers(); }
+
+  function showSubmitConfirmation() {
+    const summary = QuizUi.getSubmissionSummary(answers);
+    $("confirm-summary").textContent = `回答済み${summary.answered}問／未回答${summary.unanswered}問`;
+    $("confirm-unanswered").textContent = summary.unanswered > 0
+      ? `未回答: 第${summary.unansweredNumbers.join("問、第")}問`
+      : "";
+    show("screen-confirm");
+  }
 
   $("btn-back").addEventListener("click", () => {
     saveCurrent();
@@ -460,9 +496,16 @@
       renderQuestion();
       $("answer").focus();
     } else {
-      submitQuiz();
+      showSubmitConfirmation();
     }
   });
+
+  $("btn-confirm-back").addEventListener("click", () => {
+    show("screen-quiz");
+    $("answer").focus();
+  });
+
+  $("btn-confirm-submit").addEventListener("click", () => submitQuiz());
 
   $("answer").addEventListener("keydown", (e) => {
     if (e.key === "Enter") $("btn-next").click();
@@ -476,6 +519,9 @@
   // --- 結果 ---
   function renderResults({ perfect, review }) {
     clearQuizTimer();
+    const result = QuizUi.calculateResult(answers, review);
+    $("personal-score").textContent = `${result.score} / ${result.total}点`;
+    $("personal-accuracy").textContent = `正答率 ${result.accuracy}%`;
     if (perfect.length > 0) {
       $("no-perfect").style.display = "none";
       $("perfect-list").style.display = "";
@@ -499,6 +545,7 @@
         : r.answer;
       return `<div class="review-item">
         <div>${i + 1}. ${r.sentence.replace("___", `<strong>${answerDisplay}</strong>`)}</div>
+        ${r.sentenceJa ? `<div style="color:var(--muted-foreground)">${escapeHtml(r.sentenceJa)}</div>` : ""}
         <div>${r.ja} — <span class="${ok ? "ok" : "ng"}">${ok ? "正解 ✅" : "不正解 ❌"}</span> <span style="color:var(--muted-foreground)">${ok ? "" : mineLabel}</span></div>
       </div>`;
     }).join("");
