@@ -661,27 +661,34 @@ function quizSanitizedQuestions(room) {
   return room.questions.map((q) => ({ sentence: q.sentence, hint: quizHint(q.base), ja: q.ja, sentenceJa: q.sentenceJa }));
 }
 
+// ホストは開催者であり自分では回答しないため、提出必須人数・採点・結果表示の対象から常に除く
+function quizParticipants(room) {
+  return Object.entries(room.players)
+    .filter(([id]) => id !== room.host)
+    .map(([id, p]) => ({ id, ...p }));
+}
+
 // 制限時間が来たら、まだ提出していない参加者を0点扱いで確定させる。
 // ただしこれだけでは結果発表は行わない（発表はホストのquiz:revealResults操作を待つ）。
 function quizForceFinish(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
-  for (const p of Object.values(room.players)) {
+  for (const p of quizParticipants(room)) {
     if (p.submittedAt === null) {
-      p.score = 0;
-      p.submittedAt = Date.now();
+      room.players[p.id].score = 0;
+      room.players[p.id].submittedAt = Date.now();
     }
   }
   quizCheckAllSubmitted(roomCode);
 }
 
-// 全員の提出が揃ったことを検知し、結果発表が可能になったことをクライアントへ知らせる。
-// 結果の計算・発表そのものはquizRevealResults()（ホストの操作）が行う。
+// 全員（ホストを除く参加者）の提出が揃ったことを検知し、結果発表が可能になったことを
+// クライアントへ知らせる。結果の計算・発表そのものはquizRevealResults()（ホストの操作）が行う。
 function quizCheckAllSubmitted(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
-  const players = Object.values(room.players);
-  if (players.length === 0 || !players.every((p) => p.submittedAt !== null)) return;
+  const participants = quizParticipants(room);
+  if (participants.length === 0 || !participants.every((p) => p.submittedAt !== null)) return;
   if (room.timeoutHandle) {
     clearTimeout(room.timeoutHandle);
     room.timeoutHandle = null;
@@ -689,16 +696,16 @@ function quizCheckAllSubmitted(roomCode) {
   io.to(roomCode).emit("quiz:readyToReveal");
 }
 
-// ホストの操作で結果発表を確定させる。全員提出済みであることを再確認してから発表する。
+// ホストの操作で結果発表を確定させる。参加者全員が提出済みであることを再確認してから発表する。
 function quizRevealResults(roomCode) {
   const room = quizRooms[roomCode];
   if (!room || room.phase !== "playing") return;
-  const players = Object.values(room.players);
-  if (players.length === 0 || !players.every((p) => p.submittedAt !== null)) return;
+  const participants = quizParticipants(room);
+  if (participants.length === 0 || !participants.every((p) => p.submittedAt !== null)) return;
   room.phase = "finished";
   const total = room.questions.length;
-  const entries = Object.entries(room.players).map(([id, p]) => ({
-    id,
+  const entries = participants.map((p) => ({
+    id: p.id,
     name: p.name,
     score: p.score,
     total,
@@ -785,10 +792,10 @@ io.on("connection", (socket) => {
       res.total = room.questions.length;
       res.endsAt = room.endsAt;
       res.questions = quizSanitizedQuestions(room);
-      const players = Object.values(room.players);
-      res.submittedCount = players.filter((p) => p.submittedAt !== null).length;
-      res.totalCount = players.length;
-      res.allSubmitted = res.submittedCount === res.totalCount;
+      const participants = quizParticipants(room);
+      res.submittedCount = participants.filter((p) => p.submittedAt !== null).length;
+      res.totalCount = participants.length;
+      res.allSubmitted = participants.length > 0 && res.submittedCount === res.totalCount;
     } else if (room.phase === "finished" && room.results) {
       res.results = room.results;
     }
@@ -827,6 +834,7 @@ io.on("connection", (socket) => {
     const roomCode = socket.data.quizRoomCode;
     const room = quizRooms[roomCode];
     if (!room || room.phase !== "playing") return;
+    if (socket.data.quizPlayerId === room.host) return; // ホストは開催者であり回答しない
     const player = room.players[socket.data.quizPlayerId];
     if (!player || player.submittedAt !== null) return;
     const arr = Array.isArray(answers) ? answers : [];
@@ -835,10 +843,10 @@ io.on("connection", (socket) => {
       0
     );
     player.submittedAt = Date.now();
-    const players = Object.values(room.players);
+    const participants = quizParticipants(room);
     io.to(roomCode).emit("quiz:submitProgress", {
-      submitted: players.filter((p) => p.submittedAt !== null).length,
-      total: players.length,
+      submitted: participants.filter((p) => p.submittedAt !== null).length,
+      total: participants.length,
     });
     quizCheckAllSubmitted(roomCode);
   });

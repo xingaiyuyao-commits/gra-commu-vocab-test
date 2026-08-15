@@ -239,6 +239,45 @@ test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信
   assert.ok(emitted.some((e) => e.event === "quiz:revealResults"));
 });
 
+test("開始: ホストは回答画面を経由せず、開始と同時に提出待ち画面（結果発表ボタンつき）が表示される", () => {
+  const { window, document, fireSocketEvent } = loadQuizPage();
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: actualPlayerId,
+    hostName: "Tina",
+    players: [{ id: actualPlayerId, name: "Tina", submitted: false }],
+  });
+
+  const questions = [
+    { sentence: "I ___ tea.", answer: "drink", base: "drink", hint: "d____", ja: "飲む", sentenceJa: "" },
+  ];
+  fireSocketEvent("quiz:started", {
+    setLabel: "Day 1", total: 1, endsAt: Date.now() + 60000, questions,
+  });
+
+  assert.equal(document.getElementById("screen-waiting").classList.contains("active"), true);
+  assert.equal(document.getElementById("screen-quiz").classList.contains("active"), false);
+  assert.equal(document.getElementById("btn-reveal-results").disabled, true);
+});
+
+test("開始: 参加者（非ホスト）は従来通り回答画面が表示される", () => {
+  const { window, document, fireSocketEvent } = loadQuizPage();
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: "someone-else",
+    hostName: "Aica",
+    players: [{ id: "someone-else", name: "Aica", submitted: false }],
+  });
+
+  const questions = [
+    { sentence: "I ___ tea.", answer: "drink", base: "drink", hint: "d____", ja: "飲む", sentenceJa: "" },
+  ];
+  fireSocketEvent("quiz:started", {
+    setLabel: "Day 1", total: 1, endsAt: Date.now() + 60000, questions,
+  });
+
+  assert.equal(document.getElementById("screen-quiz").classList.contains("active"), true);
+});
+
 test("結果画面: 最上部に本人の点数と正答率が表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
   const questions = [

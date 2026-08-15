@@ -462,6 +462,12 @@
     $("quiz-set").textContent = setLabel;
     $("submit-status").textContent = "";
     $("btn-reveal-results").disabled = true;
+    if (isHost) {
+      // ホストは回答せず、開始と同時に提出状況を見守って結果発表ボタンを押すだけの役割
+      $("waiting-count").textContent = "…";
+      show("screen-waiting");
+      return;
+    }
     renderQuestion();
     show("screen-quiz");
     $("answer").focus();
@@ -594,7 +600,7 @@
       $("lobby-code").textContent = session.roomCode;
       fillSeries();
 
-      if (res.phase === "playing" && !res.submitted) {
+      if (res.phase === "playing" && !res.isHost && !res.submitted) {
         questions = res.questions;
         quizEndsAt = res.endsAt;
         $("quiz-set").textContent = res.setLabel;
@@ -607,7 +613,7 @@
         clearQuizTimer();
         updateTimerDisplay();
         timerInterval = setInterval(updateTimerDisplay, 1000);
-      } else if (res.phase === "playing" && res.submitted) {
+      } else if (res.phase === "playing" && (res.isHost || res.submitted)) {
         $("waiting-count").textContent = `${res.submittedCount} / ${res.totalCount}人`;
         $("btn-reveal-results").disabled = !res.allSubmitted;
         show("screen-waiting");
