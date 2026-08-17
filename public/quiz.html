@@ -287,10 +287,10 @@
   let seriesNames = [];
 
   function getPlayerId() {
-    let id = localStorage.getItem("quizPlayerId");
+    let id = sessionStorage.getItem("quizPlayerId");
     if (!id) {
       id = crypto.randomUUID ? crypto.randomUUID() : `p_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      localStorage.setItem("quizPlayerId", id);
+      sessionStorage.setItem("quizPlayerId", id);
     }
     return id;
   }
@@ -306,19 +306,19 @@
   let currentRoomCode = null;
 
   function saveSession(roomCode, category) {
-    localStorage.setItem("quizSession", JSON.stringify({ roomCode, category }));
+    sessionStorage.setItem("quizSession", JSON.stringify({ roomCode, category }));
   }
   function clearSession() {
-    localStorage.removeItem("quizSession");
-    localStorage.removeItem("quizAnswers");
+    sessionStorage.removeItem("quizSession");
+    sessionStorage.removeItem("quizAnswers");
     currentRoomCode = null;
   }
   function persistAnswers() {
-    if (currentRoomCode) localStorage.setItem("quizAnswers", JSON.stringify({ roomCode: currentRoomCode, answers, idx }));
+    if (currentRoomCode) sessionStorage.setItem("quizAnswers", JSON.stringify({ roomCode: currentRoomCode, answers, idx }));
   }
   function loadSavedAnswers(roomCode, length) {
     try {
-      const saved = JSON.parse(localStorage.getItem("quizAnswers") || "null");
+      const saved = JSON.parse(sessionStorage.getItem("quizAnswers") || "null");
       if (saved && saved.roomCode === roomCode && Array.isArray(saved.answers) && saved.answers.length === length) {
         return { answers: saved.answers, idx: Math.min(Math.max(saved.idx || 0, 0), length - 1) };
       }
@@ -361,7 +361,7 @@
   // 復帰セッションがある場合はattemptRejoin()の応答が来るまで何も表示しない
   // （先にentry画面を出してしまうと、リロード直後に一瞬前の画面が見えてしまうため）
   let savedSession;
-  try { savedSession = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { savedSession = null; }
+  try { savedSession = JSON.parse(sessionStorage.getItem("quizSession") || "null"); } catch { savedSession = null; }
   if (!savedSession || !savedSession.roomCode) show("screen-entry");
 
   // --- 参加/作成 ---
@@ -580,7 +580,7 @@
 
   $("btn-again").addEventListener("click", () => socket.emit("quiz:playAgain"));
   socket.on("quiz:backToLobby", () => {
-    localStorage.removeItem("quizAnswers");
+    sessionStorage.removeItem("quizAnswers");
     show("screen-lobby");
   });
 
@@ -589,7 +589,7 @@
   // 部屋への再joinはこちらで明示的にやり直す必要がある（"connect"は初回接続時にも発火する）
   function attemptRejoin() {
     let session;
-    try { session = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { session = null; }
+    try { session = JSON.parse(sessionStorage.getItem("quizSession") || "null"); } catch { session = null; }
     if (!session || !session.roomCode) return;
     socket.emit("quiz:rejoin", { roomCode: session.roomCode, playerId }, (res) => {
       if (!res || !res.ok) { clearSession(); show("screen-entry"); return; }

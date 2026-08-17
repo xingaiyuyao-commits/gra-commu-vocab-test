@@ -184,7 +184,7 @@ test("テスト画面: 例文の日本語訳がない設問では空欄になる
 test("待機画面: ルーム作成者には結果発表ボタンが表示されるが、全員提出が揃うまでは押せない", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
   // playerIdはloadQuizPage内でランダム生成されるため、hostIdを実際のplayerIdに合わせて送る
-  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -206,7 +206,7 @@ test("待機画面: ホスト以外には結果発表ボタンが表示されな
 
 test("待機画面: 全員提出が揃うとquiz:readyToRevealでボタンが押せるようになる", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
-  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -220,7 +220,7 @@ test("待機画面: 全員提出が揃うとquiz:readyToRevealでボタンが押
 
 test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信される（制限時間終了だけでは自動発表しない）", () => {
   const { window, document, fireSocketEvent, emitted } = loadQuizPage();
-  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -241,7 +241,7 @@ test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信
 
 test("開始: ホストは回答画面を経由せず、開始と同時に提出待ち画面（結果発表ボタンつき）が表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
-  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
