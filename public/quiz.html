@@ -234,9 +234,9 @@
   <!-- 待機 -->
   <div class="screen" id="screen-waiting">
     <div class="card">
-      <p class="big-status">提出しました 🎉</p>
+      <p class="big-status" id="waiting-status">提出しました 🎉</p>
       <p style="text-align:center; color:var(--muted-foreground);">
-        提出済み <span id="waiting-count"></span> — 全員の提出を待っています…
+        <span id="waiting-sub-label">提出済み</span> <span id="waiting-count"></span> — 全員の提出を待っています…
       </p>
       <button id="btn-reveal-results" style="margin-top:14px; display:none;" disabled>結果発表を見る</button>
     </div>
@@ -350,12 +350,19 @@
     saveCurrent();
     socket.emit("quiz:submit", { answers });
     $("waiting-count").textContent = "…";
+    renderWaitingStatus();
     show("screen-waiting");
   }
 
   function show(id) {
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
     $(id).classList.add("active");
+  }
+
+  // ホストは回答・提出をしない進行役なので、待機画面の文言も「自分が提出した」体にしない
+  function renderWaitingStatus() {
+    $("waiting-status").textContent = isHost ? "テストを実施中です 📋" : "提出しました 🎉";
+    $("waiting-sub-label").textContent = isHost ? "提出状況" : "提出済み";
   }
 
   // 復帰セッションがある場合はattemptRejoin()の応答が来るまで何も表示しない
@@ -465,6 +472,7 @@
     if (isHost) {
       // ホストは回答せず、開始と同時に提出状況を見守って結果発表ボタンを押すだけの役割
       $("waiting-count").textContent = "…";
+      renderWaitingStatus();
       show("screen-waiting");
       return;
     }
@@ -617,6 +625,7 @@
       } else if (res.phase === "playing" && (res.isHost || res.submitted)) {
         $("waiting-count").textContent = `${res.submittedCount} / ${res.totalCount}人`;
         $("btn-reveal-results").disabled = !res.allSubmitted;
+        renderWaitingStatus();
         show("screen-waiting");
       } else if (res.phase === "finished" && res.results) {
         const restored = loadSavedAnswers(currentRoomCode, res.results.review.length);

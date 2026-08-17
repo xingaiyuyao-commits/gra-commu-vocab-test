@@ -258,6 +258,9 @@ test("開始: ホストは回答画面を経由せず、開始と同時に提出
   assert.equal(document.getElementById("screen-waiting").classList.contains("active"), true);
   assert.equal(document.getElementById("screen-quiz").classList.contains("active"), false);
   assert.equal(document.getElementById("btn-reveal-results").disabled, true);
+  // ホストは回答・提出をしない進行役のため「提出しました」という自分ごとの文言にしない
+  assert.notEqual(document.getElementById("waiting-status").textContent, "提出しました 🎉");
+  assert.notEqual(document.getElementById("waiting-sub-label").textContent, "提出済み");
 });
 
 test("開始: 参加者（非ホスト）は従来通り回答画面が表示される", () => {
