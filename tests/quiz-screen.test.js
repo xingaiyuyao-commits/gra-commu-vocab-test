@@ -307,3 +307,33 @@ test("結果画面: 最上部に本人の点数と正答率が表示される", 
   assert.match(document.getElementById("personal-score").textContent, /1\s*\/\s*2/);
   assert.match(document.getElementById("personal-accuracy").textContent, /50/);
 });
+
+test("結果画面: ホストは進行役なので自分の点数・正答率・コメントは表示せず、満点者と答え合わせだけ表示される", () => {
+  const { window, document, fireSocketEvent } = loadQuizPage();
+  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
+  fireSocketEvent("quiz:playersUpdate", {
+    hostId: actualPlayerId,
+    hostName: "Tina",
+    players: [{ id: actualPlayerId, name: "Tina", submitted: false }],
+  });
+
+  const questions = [
+    { sentence: "I ___ tea.", answer: "drink", base: "drink", hint: "d____", ja: "飲む", sentenceJa: "" },
+  ];
+  fireSocketEvent("quiz:started", {
+    setLabel: "Day 1", total: 1, endsAt: Date.now() + 60000, questions,
+  });
+
+  fireSocketEvent("quiz:results", {
+    perfect: [{ id: "someone-else", name: "Aica", timeMs: 1000 }],
+    review: [
+      { sentence: "I ___ tea.", answer: "drink", ja: "飲む", sentenceJa: "" },
+    ],
+  });
+
+  assert.equal(document.getElementById("personal-score-card").style.display, "none");
+  assert.equal(document.getElementById("encourage-card").style.display, "none");
+  assert.notEqual(document.getElementById("perfect-list").style.display, "none");
+  assert.match(document.getElementById("perfect-list").innerHTML, /Aica/);
+  assert.match(document.getElementById("review").innerHTML, /drink/);
+});

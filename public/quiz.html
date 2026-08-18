@@ -245,7 +245,7 @@
 
   <!-- 結果 -->
   <div class="screen" id="screen-results">
-    <div class="card">
+    <div class="card" id="personal-score-card">
       <p style="text-align:center; font-size:2rem; font-weight:800;" id="personal-score"></p>
       <p style="text-align:center; color:var(--muted-foreground);" id="personal-accuracy"></p>
     </div>
@@ -564,7 +564,9 @@
       $("no-perfect").style.display = "";
     }
     const iAmPerfect = perfect.some((p) => p.id === playerId);
-    $("encourage-card").style.display = iAmPerfect ? "none" : "";
+    // ホストは回答していない進行役なので、自分の点数・正答率・コメントは意味を持たない
+    $("personal-score-card").style.display = isHost ? "none" : "";
+    $("encourage-card").style.display = (isHost || iAmPerfect) ? "none" : "";
     $("review").innerHTML = review.map((r, i) => {
       const mine = (answers[i] || "").trim().toLowerCase();
       const ok = mine === r.answer || (Array.isArray(r.altAnswers) && r.altAnswers.includes(mine));
