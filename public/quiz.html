@@ -134,6 +134,7 @@
 
   /* 待機・結果 */
   .big-status { text-align: center; font-size: 1.6rem; font-weight: 700; margin: 24px 0; }
+  .waiting-set { text-align: center; font-size: 1.3rem; font-weight: 700; color: var(--primary); margin: 0 0 4px; }
   .perfect-title { font-size: 1.25rem; font-weight: 700; text-align: center; margin-bottom: 12px; }
   .rank-list { list-style: none; }
   .rank-list li {
@@ -234,6 +235,7 @@
   <!-- 待機 -->
   <div class="screen" id="screen-waiting">
     <div class="card">
+      <p class="waiting-set" id="waiting-set"></p>
       <p class="big-status" id="waiting-status">提出しました 🎉</p>
       <p style="text-align:center; color:var(--muted-foreground);">
         <span id="waiting-sub-label">提出済み</span> <span id="waiting-count"></span> — 全員の提出を待っています…
@@ -305,6 +307,7 @@
   let quizEndsAt = 0;
   let timerInterval = null;
   let currentRoomCode = null;
+  let currentSetLabel = "";
 
   function saveSession(roomCode, category) {
     sessionStorage.setItem("quizSession", JSON.stringify({ roomCode, category }));
@@ -362,6 +365,7 @@
 
   // ホストは回答・提出をしない進行役なので、待機画面の文言も「自分が提出した」体にしない
   function renderWaitingStatus() {
+    $("waiting-set").textContent = currentSetLabel || "";
     $("waiting-status").textContent = isHost ? "テストを実施中です 📋" : "提出しました 🎉";
     $("waiting-sub-label").textContent = isHost ? "提出状況" : "提出済み";
   }
@@ -467,6 +471,7 @@
     idx = 0;
     persistAnswers();
     quizEndsAt = endsAt;
+    currentSetLabel = setLabel;
     $("quiz-set").textContent = setLabel;
     $("submit-status").textContent = "";
     $("btn-reveal-results").disabled = true;
@@ -616,6 +621,7 @@
       if (res.phase === "playing" && !res.isHost && !res.submitted) {
         questions = res.questions;
         quizEndsAt = res.endsAt;
+        currentSetLabel = res.setLabel;
         $("quiz-set").textContent = res.setLabel;
         $("submit-status").textContent = "";
         const restored = loadSavedAnswers(currentRoomCode, questions.length);
@@ -627,6 +633,7 @@
         updateTimerDisplay();
         timerInterval = setInterval(updateTimerDisplay, 1000);
       } else if (res.phase === "playing" && (res.isHost || res.submitted)) {
+        currentSetLabel = res.setLabel;
         $("waiting-count").textContent = `${res.submittedCount} / ${res.totalCount}人`;
         $("btn-reveal-results").disabled = !res.allSubmitted;
         renderWaitingStatus();

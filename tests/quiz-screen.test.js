@@ -261,6 +261,23 @@ test("開始: ホストは回答画面を経由せず、開始と同時に提出
   // ホストは回答・提出をしない進行役のため「提出しました」という自分ごとの文言にしない
   assert.notEqual(document.getElementById("waiting-status").textContent, "提出しました 🎉");
   assert.notEqual(document.getElementById("waiting-sub-label").textContent, "提出済み");
+  assert.match(document.getElementById("waiting-set").textContent, /Day 1/);
+});
+
+test("待機画面: 結果発表ボタンがある画面にどのコース・Dayかが大きく表示される", () => {
+  const { window, document, fireSocketEvent } = loadQuizPage();
+  const questions = [
+    { sentence: "I ___ tea.", answer: "drink", base: "drink", hint: "d____", ja: "飲む", sentenceJa: "" },
+  ];
+  fireSocketEvent("quiz:started", {
+    setLabel: "Clacel Day 1", total: 1, endsAt: Date.now() + 60000, questions,
+  });
+  document.getElementById("answer").value = "drink";
+  document.getElementById("btn-next").dispatchEvent(new window.Event("click", { bubbles: true }));
+  document.getElementById("btn-confirm-submit").dispatchEvent(new window.Event("click", { bubbles: true }));
+
+  assert.equal(document.getElementById("screen-waiting").classList.contains("active"), true);
+  assert.match(document.getElementById("waiting-set").textContent, /Clacel Day 1/);
 });
 
 test("開始: 参加者（非ホスト）は従来通り回答画面が表示される", () => {
