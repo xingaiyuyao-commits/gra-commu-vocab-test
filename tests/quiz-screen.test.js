@@ -10,22 +10,15 @@ function setValue(window, el, value) {
 test("参加・作成画面: ラベル文言が仕様通り", () => {
   const { document } = loadQuizPage();
   assert.equal(document.querySelector('label[for="name"]').textContent, "名前");
-  assert.equal(document.getElementById("category-label").textContent, "単語帳を選択");
   assert.equal(document.querySelector('label[for="room"]').textContent, "ルームコード");
 });
 
-test("参加・作成画面: 単語帳ボタンにaria-pressedがあり、選択に応じて切り替わる", () => {
-  const { window, document } = loadQuizPage();
-  const buttons = Array.from(document.querySelectorAll(".cat-btn"));
-  buttons.forEach((b) => assert.equal(b.getAttribute("aria-pressed"), "false"));
-
-  buttons[0].dispatchEvent(new window.Event("click", { bubbles: true }));
-  assert.equal(buttons[0].getAttribute("aria-pressed"), "true");
-  assert.equal(buttons[1].getAttribute("aria-pressed"), "false");
-
-  buttons[1].dispatchEvent(new window.Event("click", { bubbles: true }));
-  assert.equal(buttons[0].getAttribute("aria-pressed"), "false");
-  assert.equal(buttons[1].getAttribute("aria-pressed"), "true");
+test("参加・作成画面: Clacel/TOEIC/IELTSそれぞれの作成ボタンが縦並びで表示される", () => {
+  const { document } = loadQuizPage();
+  ["clacel", "toeic", "ielts"].forEach((category) => {
+    assert.ok(document.getElementById(`mh-${category}-create`), `${category}の作成ボタンがある`);
+    assert.equal(document.getElementById(`mh-${category}-lobby`).hidden, true, `${category}は最初ロビー非表示`);
+  });
 });
 
 test("参加・作成画面: エラーにrole=alert、入力欄がエラーと関連付けられている", () => {
@@ -36,22 +29,80 @@ test("参加・作成画面: エラーにrole=alert、入力欄がエラーと�
   assert.equal(document.getElementById("room").getAttribute("aria-describedby"), "entry-error");
 });
 
-test("参加・作成画面: 名前と単語帳の両方が揃うまで作成ボタンは無効", () => {
-  const { window, document } = loadQuizPage();
-  const nameInput = document.getElementById("name");
-  const catButtons = document.querySelectorAll(".cat-btn");
-  const createBtn = document.getElementById("btn-create");
+test("参加・作成画面: 名前を入力せずに作成ボタンを押すとエラーが出て、ルーム作成は行われない", () => {
+  const { window, document, fakeSockets } = loadQuizPage();
+  document.getElementById("mh-clacel-create").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(document.getElementById("entry-error").textContent, "名前を入力してください");
+  assert.equal(fakeSockets.length, 1, "名前が空ならmh用の新しいソケット接続は作られない");
+});
 
-  assert.equal(createBtn.disabled, true);
+test("参加・作成画面: 名前を入力してから作成ボタンを押すとそのコースのルームが作成される", () => {
+  const { window, document, fakeSockets } = loadQuizPage();
+  setValue(window, document.getElementById("name"), "ホスト太郎");
+  document.getElementById("mh-clacel-create").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(fakeSockets.length, 2, "Clacel用の新しいソケット接続が1つ作られる");
 
-  setValue(window, nameInput, "Tina");
-  assert.equal(createBtn.disabled, true, "単語帳未選択ならまだ無効のまま");
+  const mhSocket = fakeSockets[1];
+  const createCall = mhSocket.emitted.find((e) => e.event === "quiz:createRoom");
+  assert.ok(createCall, "quiz:createRoomが送信される");
+  assert.equal(createCall.payload.category, "clacel");
+  assert.equal(createCall.payload.name, "ホスト太郎");
 
-  catButtons[0].dispatchEvent(new window.Event("click", { bubbles: true }));
-  assert.equal(createBtn.disabled, false, "名前と単語帳が揃ったら有効になる");
+  createCall.cb({ roomCode: "ABCD", isHost: true, category: "clacel", seriesNames: ["Day 1", "Day 2"] });
+  assert.equal(document.getElementById("mh-clacel-code").textContent, "ABCD");
+  assert.equal(document.getElementById("mh-clacel-lobby").hidden, false);
+});
 
-  setValue(window, nameInput, "");
-  assert.equal(createBtn.disabled, true, "名前を消したら再び無効になる");
+test("参加・作成画面: ホストの複数コース作成パネルは開始〜結果発表〜もう一度まで1画面で完結する", () => {
+  const { window, document, fakeSockets } = loadQuizPage();
+  setValue(window, document.getElementById("name"), "ホスト");
+
+  document.getElementById("mh-toeic-create").dispatchEvent(new window.Event("click", { bubbles: true }));
+  const s = fakeSockets[1];
+  const createCall = s.emitted.find((e) => e.event === "quiz:createRoom");
+  createCall.cb({ roomCode: "WXYZ", isHost: true, category: "toeic", seriesNames: ["Day 1", "Day 2"] });
+
+  assert.equal(document.getElementById("mh-toeic-lobby").hidden, false);
+  assert.equal(document.getElementById("mh-toeic-create").hidden, true);
+  assert.match(document.getElementById("mh-toeic-players").innerHTML, /ホスト/);
+
+  // 参加者が入る
+  s.fire("quiz:playersUpdate", { hostId: "h", players: [{ name: "ホスト", submitted: false }, { name: "Aさん", submitted: false }] });
+  assert.match(document.getElementById("mh-toeic-players").innerHTML, /Aさん/);
+
+  // テスト開始
+  document.getElementById("mh-toeic-start").dispatchEvent(new window.Event("click", { bubbles: true }));
+  const startCall = s.emitted.find((e) => e.event === "quiz:startGame");
+  assert.ok(startCall, "quiz:startGameが送信される");
+
+  s.fire("quiz:started", { setLabel: "TOEIC Day 1", total: 20, endsAt: Date.now() + 300000 });
+  assert.equal(document.getElementById("mh-toeic-waiting").hidden, false);
+  assert.match(document.getElementById("mh-toeic-timer").textContent, /残り時間/);
+  assert.equal(document.getElementById("mh-toeic-reveal").disabled, true);
+
+  // 提出状況
+  s.fire("quiz:submitProgress", { submitted: 1, total: 2 });
+  assert.match(document.getElementById("mh-toeic-progress").textContent, /1 \/ 2/);
+
+  // 全員提出→結果発表ボタンが押せる
+  s.fire("quiz:readyToReveal");
+  assert.equal(document.getElementById("mh-toeic-reveal").disabled, false);
+
+  window.confirm = () => true;
+  document.getElementById("mh-toeic-reveal").dispatchEvent(new window.Event("click", { bubbles: true }));
+  const revealCall = s.emitted.find((e) => e.event === "quiz:revealResults");
+  assert.ok(revealCall, "quiz:revealResultsが送信される");
+
+  s.fire("quiz:results", { setLabel: "TOEIC Day 1", perfect: [{ name: "Aさん" }], others: [] });
+  assert.equal(document.getElementById("mh-toeic-results").hidden, false);
+  assert.match(document.getElementById("mh-toeic-perfect").innerHTML, /Aさん/);
+
+  // もう一度
+  document.getElementById("mh-toeic-again").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.ok(s.emitted.some((e) => e.event === "quiz:playAgain"));
+  s.fire("quiz:backToLobby");
+  assert.equal(document.getElementById("mh-toeic-lobby").hidden, false);
+  assert.equal(document.getElementById("mh-toeic-results").hidden, true);
 });
 
 test("提出確認: 最終問題で「回答を確認」を押すと確認画面を表示する（即提出しない）", () => {
@@ -278,6 +329,7 @@ test("待機画面: 結果発表ボタンがある画面にどのコース・Day
 
   assert.equal(document.getElementById("screen-waiting").classList.contains("active"), true);
   assert.match(document.getElementById("waiting-set").textContent, /Clacel Day 1/);
+  assert.match(document.getElementById("waiting-timer").textContent, /残り時間/);
 });
 
 test("開始: 参加者（非ホスト）は従来通り回答画面が表示される", () => {
