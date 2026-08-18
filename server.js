@@ -891,6 +891,9 @@ io.on("connection", (socket) => {
     const room = quizRooms[roomCode];
     const player = room && playerId && room.players[playerId];
     if (!player) return;
+    // 提出済み、または結果発表済みの参加者は、切断してももう待つ必要がないので退出させない
+    // （提出直後にアプリをバックグラウンド化して20秒以上経つと結果が見られなくなる不具合の修正）
+    if (player.submittedAt !== null || room.phase === "finished") return;
     player.leaveTimer = setTimeout(() => quizFinalizePlayerLeave(roomCode, playerId), QUIZ_RECONNECT_GRACE_MS);
   });
 
