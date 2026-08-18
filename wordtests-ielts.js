@@ -561,7 +561,7 @@ module.exports = {
         { sentence: "The forest was too ___ to walk through easily.", answer: "dense", base: "dense", hint: "d____", ja: "密生した、密集した", sentenceJa: "その森は簡単には歩き抜けられないほど密生していた。" },
         { sentence: "The two groups showed a clear ___ response to treatment.", answer: "differential", base: "differential", hint: "d___________", ja: "差異のある、差別的な", sentenceJa: "その二つのグループは治療に対して明確に異なる反応を示した。" },
         { sentence: "The material is highly ___ and returns to its shape.", answer: "elastic", base: "elastic", hint: "e______", ja: "弾力性のある", sentenceJa: "その素材は非常に弾力性があり、元の形に戻る。" },
-        { sentence: "Only an ___ group of athletes qualified for the finals.", answer: "elite", base: "elite", hint: "e____", ja: "エリートの、選ばれた", sentenceJa: "エリート集団の選手たちだけが決勝に進んだ。" },
+        { sentence: "Only an ___ group of athletes qualified for the finals.", answer: "elite", base: "elite", hint: "e____", ja: "選ばれた", sentenceJa: "エリート集団の選手たちだけが決勝に進んだ。" },
         { sentence: "The trait offers a clear ___ advantage.", answer: "evolutionary", base: "evolutionary", hint: "e___________", ja: "進化上の", sentenceJa: "その特徴は明確な進化上の利点をもたらす。" },
         { sentence: "Her writing style is ___ and easy to follow.", answer: "fluid", base: "fluid", hint: "f____", ja: "流暢な、流動的な", sentenceJa: "彼女の文体は流暢で読みやすい。" },
         { sentence: "There was an ___ agreement between the two parties.", answer: "implicit", base: "implicit", hint: "i_______", ja: "暗黙の", sentenceJa: "その二者の間には暗黙の合意があった。" },
