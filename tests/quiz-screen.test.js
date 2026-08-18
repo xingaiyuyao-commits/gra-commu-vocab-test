@@ -13,12 +13,14 @@ test("参加・作成画面: ラベル文言が仕様通り", () => {
   assert.equal(document.querySelector('label[for="room"]').textContent, "ルームコード");
 });
 
-test("参加・作成画面: Clacel/TOEIC/IELTSそれぞれの作成ボタンが縦並びで表示される", () => {
-  const { document } = loadQuizPage();
+test("参加・作成画面: Clacel/TOEIC/IELTSそれぞれの作成ボタンが横並びで表示される", () => {
+  const { document } = loadQuizPage({ url: "http://localhost/quiz.html?mode=create" });
   ["clacel", "toeic", "ielts"].forEach((category) => {
     assert.ok(document.getElementById(`mh-${category}-create`), `${category}の作成ボタンがある`);
     assert.equal(document.getElementById(`mh-${category}-lobby`).hidden, true, `${category}は最初ロビー非表示`);
+    assert.equal(document.getElementById(`mh-${category}`).parentElement.classList.contains("mh-row"), true, `${category}パネルは共通のmh-row内にある`);
   });
+  assert.equal(document.querySelector(".container").classList.contains("wide"), true, "作成画面ではcontainerが横に広がる");
 });
 
 test("参加・作成画面: エラーにrole=alert、入力欄がエラーと関連付けられている", () => {

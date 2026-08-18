@@ -95,8 +95,10 @@
   .leave { background: none; border: none; color: var(--muted-foreground); font-size: .85rem; width: auto; height: auto; margin: 16px auto 0; display: block; text-decoration: underline; cursor: pointer; }
 
   /* ホスト用: 複数コース同時作成 */
+  .container.wide { max-width: 68rem; }
   .mh-intro { text-align: center; color: var(--muted-foreground); font-size: .85rem; margin-bottom: 14px; }
-  .mh-panel { border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: 16px; margin-bottom: 14px; }
+  .mh-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .mh-panel { flex: 1 1 260px; min-width: 0; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: 16px; margin-bottom: 14px; }
   .mh-panel-head { font-weight: 700; font-size: 1rem; margin-bottom: 10px; }
   .mh-panel .room-code { font-size: 1.6rem; }
   .mh-progress { text-align: center; color: var(--muted-foreground); font-size: .85rem; margin-bottom: 10px; }
@@ -146,6 +148,7 @@
       <input id="name" maxlength="12" placeholder="コミュニティ名" aria-describedby="entry-error" />
       <div id="create-section">
         <p class="mh-intro">コースごとに好きなタイミングでルームを作成できます</p>
+        <div class="mh-row">
         <div class="mh-panel" id="mh-clacel">
           <div class="mh-panel-head">Clacel</div>
           <button id="mh-clacel-create" class="mh-create-btn">Clacelのルームを作成</button>
@@ -214,6 +217,7 @@
             <p class="mh-progress" id="mh-ielts-noperfect" hidden>今回、満点の人はいませんでした</p>
             <button id="mh-ielts-again" class="secondary">もう一度（ロビーに戻る）</button>
           </div>
+        </div>
         </div>
       </div>
       <div id="join-section">
@@ -447,6 +451,7 @@
   const entryMode = new URLSearchParams(location.search).get("mode");
   if (entryMode === "create") {
     $("join-section").style.display = "none";
+    document.querySelector(".container").classList.add("wide");
   } else if (entryMode === "join") {
     $("create-section").style.display = "none";
     $("room").parentElement.querySelector("label").style.marginTop = "0";
