@@ -20,7 +20,7 @@ SERIES[8] = dict(
         ("arrive at", "/əˈraɪv æt/", "phrase", "arrives at, arrived at", "到着する、（結論に）達する", "Last night, we finally <i>arrived at</i> a decision after hours of discussion.", "昨夜、何時間も議論した末、私たちはついに結論に達した。"),
         ("listen to", "/ˈlɪs.ən tuː/", "phrase", "listens to, listened to", "耳を傾ける", "You should <i>listen to</i> your doctor's advice.", "医者の助言に耳を傾けるべきだ。"),
         ("talk to", "/tɔːk tuː/", "phrase", "talks to, talked to", "話しかける", "I need to <i>talk to</i> my manager about this.", "この件について上司と話す必要がある。"),
-        ("give to", "/ɡɪv tuː/", "phrase", "gives to, gave to", "（慈善などに）寄付する、与える", "These days, she <i>gives to</i> several local charities.", "近頃、彼女はいくつかの地元の慈善団体に寄付をしている。"),
+        ("give to", "/ɡɪv tuː/", "phrase", "gives to, gave to", "（慈善などに）寄付する、与える", "She <i>gives to</i> several local charities.", "彼女はいくつかの地元の慈善団体に寄付をしている。"),
         ("recover from", "/rɪˈkʌv.ɚ frʌm/", "phrase", "recovers from, recovered from", "回復する", "It took weeks to <i>recover from</i> the flu.", "インフルエンザから回復するのに数週間かかった。"),
         ("fall in love with", "/fɔːl ɪn lʌv wɪð/", "phrase", "falls in love with, fell in love with", "恋に落ちる、大好きになる", "Last spring, they <i>fell in love with</i> the small mountain town.", "去年の春、彼らはその小さな山の町に魅了された。"),
         ("deal with", "/diːl wɪð/", "phrase", "deals with, dealt with", "対処する", "We need to <i>deal with</i> this issue right away.", "私たちはこの問題にすぐに対処する必要がある。"),

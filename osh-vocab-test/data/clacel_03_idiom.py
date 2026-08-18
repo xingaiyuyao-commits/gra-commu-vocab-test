@@ -65,7 +65,7 @@ SERIES[7] = dict(
         ("tend to", "/tend tuː/", "phrase", "tends to, tended to", "〜しがちである", "He <i>tends to</i> talk too fast when he's nervous.", "彼は緊張すると早口になりがちだ。"),
         ("catch up with", "/kætʃ ʌp wɪð/", "phrase", "catches up with, caught up with", "追いつく、近況を語り合う", "Let's <i>catch up with</i> each other over coffee.", "コーヒーでも飲みながら近況を話そう。"),
         ("for sure", "/fɔːr ʃʊr/", "phrase", "", "確かに、間違いなく", "I don't know <i>for sure</i> if she's coming.", "彼女が来るかどうか確かなことは分からない。"),
-        ("get along with", "/ɡet əˈlɔːŋ wɪð/", "phrase", "gets along with, got along with", "仲良くやっていく", "She usually <i>gets along with</i> everyone in the office.", "彼女はたいていオフィスの誰とでもうまくやっている。"),
+        ("get along with", "/ɡet əˈlɔːŋ wɪð/", "phrase", "gets along with, got along with", "仲良くやっていく", "She <i>gets along with</i> everyone in the office.", "彼女はオフィスの誰とでもうまくやっている。"),
         ("in reality", "/ɪn riˈæl.ə.t̬i/", "phrase", "", "実際には", "The plan sounds simple, but <i>in reality</i> it's quite complex.", "その計画は単純に聞こえるが、実際にはかなり複雑だ。"),
         ("in spite of", "/ɪn spaɪt ʌv/", "phrase", "", "〜にもかかわらず", "<i>In spite of</i> the rain, they finished the game.", "雨にもかかわらず、彼らは試合を終えた。"),
         ("in vain", "/ɪn veɪn/", "phrase", "", "無駄に", "They tried <i>in vain</i> to fix the old engine.", "彼らはその古いエンジンを直そうとしたが無駄だった。"),

@@ -23,7 +23,7 @@ SERIES[8] = dict(
         ("fulfill", "/fʊlˈfɪl/", "verb", "fulfills, fulfilled", "満たす、果たす",
          "The policy failed to <i>fulfill</i> its original goals.", "その政策は当初の目標を果たせなかった。"),
         ("illustrate", "/ˈɪl.ə.streɪt/", "verb", "illustrates, illustrated", "説明する、示す",
-         "This graph currently <i>illustrates</i> the trend over the past decade.", "このグラフは現在、過去10年間の傾向を示している。"),
+         "This graph <i>illustrates</i> the trend over the past decade.", "このグラフは過去10年間の傾向を示している。"),
         ("impose", "/ɪmˈpoʊz/", "verb", "imposes, imposed", "課す",
          "Last year, the government <i>imposed</i> new restrictions on imports.", "昨年、政府は輸入に新たな制限を課した。"),
         ("inquire", "/ɪnˈkwaɪr/", "verb", "inquires, inquired", "尋ねる",
@@ -45,6 +45,6 @@ SERIES[8] = dict(
         ("magnify", "/ˈmæɡ.nə.faɪ/", "verb", "magnifies, magnified", "拡大する",
          "Social media can <i>magnify</i> the effects of misinformation.", "ソーシャルメディアは誤情報の影響を拡大させることがある。"),
         ("mandate", "/ˈmæn.deɪt/", "verb", "mandates, mandated", "義務付ける",
-         "This new law currently <i>mandates</i> stricter safety inspections.", "この新しい法律は現在、より厳格な安全点検を義務付けている。"),
+         "This new law <i>mandates</i> stricter safety inspections.", "この新しい法律はより厳格な安全点検を義務付けている。"),
     ],
 )

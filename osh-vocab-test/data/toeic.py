@@ -18,11 +18,11 @@ SERIES[1] = dict(
         ("inspect", "/ɪnˈspɛkt/", "verb", "inspects, inspected", "検査する", "A technician will <i>inspect</i> the equipment tomorrow.", "明日、技術者が設備を点検する予定です。"),
         ("inquire", "/ɪnˈkwaɪr/", "verb", "inquires, inquired", "問い合わせる", "Yesterday, a customer <i>inquired</i> about the refund policy.", "昨日、ある顧客が返金ポリシーについて問い合わせた。"),
         ("prohibit", "/proʊˈhɪb.ɪt/", "verb", "prohibits, prohibited", "禁止する", "Currently, company rules <i>prohibit</i> the use of phones during meetings.", "現在、会社の規則で会議中の携帯電話の使用は禁止されている。"),
-        ("supervise", "/ˈsuː.pɚ.vaɪz/", "verb", "supervises, supervised", "監督する", "These days, the manager <i>supervises</i> all new employees during training.", "最近、マネージャーは研修中の新入社員全員を監督している。"),
-        ("subscribe", "/səbˈskraɪb/", "verb", "subscribes, subscribed", "定期購読する、加入する", "These days, many readers <i>subscribe</i> to our weekly newsletter.", "最近、多くの読者が私たちの週刊ニュースレターを定期購読している。"),
+        ("supervise", "/ˈsuː.pɚ.vaɪz/", "verb", "supervises, supervised", "監督する", "The manager <i>supervises</i> all new employees during training.", "マネージャーは研修中の新入社員全員を監督している。"),
+        ("subscribe", "/səbˈskraɪb/", "verb", "subscribes, subscribed", "定期購読する、加入する", "Many readers <i>subscribe</i> to our weekly newsletter.", "多くの読者が私たちの週刊ニュースレターを定期購読している。"),
         ("authorize", "/ˈɑː.θə.raɪz/", "verb", "authorizes, authorized", "許可する、承認する", "Last week, the manager <i>authorized</i> the extra budget for the project.", "先週、マネージャーはそのプロジェクトの追加予算を承認した。"),
         ("accommodate", "/əˈkɑː.mə.deɪt/", "verb", "accommodates, accommodated", "収容する、対応する", "Currently, the new hotel <i>accommodates</i> up to 500 guests.", "現在、その新しいホテルは最大500人の宿泊客を収容できる。"),
-        ("commute", "/kəˈmjuːt/", "verb", "commutes, commuted", "通勤する", "These days, he <i>commutes</i> to the office by train every day.", "最近、彼は毎日電車でオフィスに通勤している。"),
+        ("commute", "/kəˈmjuːt/", "verb", "commutes, commuted", "通勤する", "He <i>commutes</i> to the office by train every day.", "彼は毎日電車でオフィスに通勤している。"),
         ("relocate", "/ˌriːˈloʊ.keɪt/", "verb", "relocates, relocated", "移転する", "The firm plans to <i>relocate</i> its head office next year.", "その会社は来年、本社を移転する計画だ。"),
         ("verify", "/ˈvɛr.ə.faɪ/", "verb", "verifies, verified", "確認する、検証する", "Yesterday, the technician <i>verified</i> that the system was working correctly.", "昨日、技術者はシステムが正常に動作していることを確認した。"),
         ("confirm", "/kənˈfɝːm/", "verb", "confirms, confirmed", "確認する、確定する", "Could you <i>confirm</i> your reservation by Friday?", "金曜日までにご予約を確認していただけますか？"),
@@ -33,7 +33,7 @@ SERIES[1] = dict(
 SERIES[2] = dict(
     pos_label="動詞 Verbs ②",
     words=[
-        ("assemble", "/əˈsɛm.bəl/", "verb", "assembles, assembled", "組み立てる、集める", "Workers usually <i>assemble</i> the furniture before it is shipped.", "作業員はたいてい、発送する前に家具を組み立てる。"),
+        ("assemble", "/əˈsɛm.bəl/", "verb", "assembles, assembled", "組み立てる、集める", "Workers <i>assemble</i> the furniture before it is shipped.", "作業員は発送する前に家具を組み立てる。"),
         ("coordinate", "/koʊˈɔːr.də.neɪt/", "verb", "coordinates, coordinated", "調整する、まとめる", "She will <i>coordinate</i> the schedules of all the departments.", "彼女は全部署のスケジュールを調整する予定だ。"),
         ("designate", "/ˈdɛz.ɪg.neɪt/", "verb", "designates, designated", "指定する、任命する", "The company will <i>designate</i> a new area for parking.", "その会社は駐車場のための新しいエリアを指定する予定だ。"),
         ("distribute", "/dɪˈstrɪb.juːt/", "verb", "distributes, distributed", "配布する、流通させる", "Volunteers will <i>distribute</i> brochures at the entrance.", "ボランティアが入口でパンフレットを配布する予定だ。"),

@@ -18,7 +18,7 @@ SERIES[6] = dict(
         ("move", "/muːv/", "verb", "moves, moved", "動く、引っ越す", "They <i>moved</i> to a bigger house last month.", "彼らは先月、もっと大きな家に引っ越した。"),
         ("wave", "/weɪv/", "verb", "waves, waved", "手を振る", "Yesterday, she <i>waved</i> at us from across the street.", "昨日、彼女は通りの向こうから私たちに手を振った。"),
         ("skip", "/skɪp/", "verb", "skips, skipped", "抜かす、跳ねる", "He often <i>skips</i> breakfast when he's busy.", "彼は忙しいとよく朝食を抜く。"),
-        ("seem", "/siːm/", "verb", "seems, seemed", "〜のように見える", "These days, she <i>seems</i> very confident about the interview.", "近頃、彼女はその面接についてとても自信があるように見える。"),
+        ("seem", "/siːm/", "verb", "seems, seemed", "〜のように見える", "She <i>seems</i> very confident about the interview.", "彼女はその面接についてとても自信があるように見える。"),
         ("arrest", "/əˈrest/", "verb", "arrests, arrested", "逮捕する", "Yesterday, the police <i>arrested</i> two suspects near the station.", "昨日、警察は駅の近くで容疑者2人を逮捕した。"),
         ("surprise", "/sɚˈpraɪz/", "verb", "surprises, surprised", "驚かせる", "Yesterday, the news <i>surprised</i> everyone in the office.", "昨日、そのニュースはオフィスの全員を驚かせた。"),
         ("lift", "/lɪft/", "verb", "lifts, lifted", "持ち上げる", "Yesterday, he <i>lifted</i> the heavy box onto the shelf.", "昨日、彼は重い箱を持ち上げて棚に乗せた。"),

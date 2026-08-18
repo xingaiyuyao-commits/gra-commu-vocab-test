@@ -36,7 +36,7 @@ SERIES[14] = dict(
     words=[
         ("duplicate", "/ˈduː.plɪ.keɪt/", "verb", "duplicates, duplicated", "複製する", "Yesterday, the assistant <i>duplicated</i> the document and sent a copy to each department.", "昨日、アシスタントはその書類を複製し、各部署にコピーを送った。"),
         ("fasten", "/ˈfæs.ən/", "verb", "fastens, fastened", "固定する、締める", "Please <i>fasten</i> your seatbelt before the plane takes off.", "飛行機が離陸する前にシートベルトを締めてください。"),
-        ("opt", "/ɑːpt/", "verb", "opts, opted", "選ぶ、選択する", "These days, many employees <i>opt</i> to work from home on Fridays.", "近頃、多くの従業員は金曜日に在宅勤務を選んでいる。"),
+        ("opt", "/ɑːpt/", "verb", "opts, opted", "選ぶ、選択する", "Many employees <i>opt</i> to work from home on Fridays.", "多くの従業員は金曜日に在宅勤務を選んでいる。"),
         ("polish", "/ˈpɑː.lɪʃ/", "verb", "polishes, polished", "磨く、仕上げる", "Yesterday, she <i>polished</i> her presentation before the big meeting.", "昨日、彼女は大事な会議の前にプレゼンを仕上げた。"),
         ("rehearse", "/rɪˈhɝːs/", "verb", "rehearses, rehearsed", "リハーサルをする、練習する", "Yesterday, the team <i>rehearsed</i> their presentation twice before the client meeting.", "昨日、チームはクライアントとの会議の前に2回プレゼンのリハーサルをした。"),
         ("maximize", "/ˈmæk.sə.maɪz/", "verb", "maximizes, maximized", "最大化する", "Last quarter, the company <i>maximized</i> its profits by cutting costs.", "前四半期、その会社はコストを削減して利益を最大化した。"),
@@ -53,7 +53,7 @@ SERIES[14] = dict(
         ("amuse", "/əˈmjuːz/", "verb", "amuses, amused", "楽しませる、面白がらせる", "The comedian's jokes <i>amused</i> the entire audience last night.", "昨夜、そのコメディアンのジョークは観客全員を楽しませた。"),
         ("tow", "/toʊ/", "verb", "tows, towed", "牽引する、レッカー移動する", "The mechanic <i>towed</i> the broken-down car to the garage this morning.", "今朝、整備士は故障した車を修理工場まで牽引した。"),
         ("jog", "/dʒɑːɡ/", "verb", "jogs, jogged", "ジョギングする", "She <i>jogs</i> around the park every morning before work.", "彼女は毎朝、仕事の前に公園の周りをジョギングする。"),
-        ("dislike", "/dɪsˈlaɪk/", "verb", "dislikes, disliked", "嫌う、好まない", "Many customers currently <i>dislike</i> the new pricing policy.", "多くの顧客は現在、その新しい価格方針を好んでいない。"),
+        ("dislike", "/dɪsˈlaɪk/", "verb", "dislikes, disliked", "嫌う、好まない", "Many customers <i>dislike</i> the new pricing policy.", "多くの顧客はその新しい価格方針を好んでいない。"),
     ],
 )
 

@@ -10,7 +10,7 @@ SERIES[1] = dict(
         ("lock", "/lɑːk/", "verb", "locks, locked", "鍵をかける", "Please <i>lock</i> the door before you leave.", "出かける前にドアに鍵をかけてください。"),
         ("confuse", "/kənˈfjuːz/", "verb", "confuses, confused", "混乱させる、混同する", "Don't <i>confuse</i> these two words; they look similar.", "この2つの単語を混同しないで。似ているから。"),
         ("contain", "/kənˈteɪn/", "verb", "contains, contained", "含む、抑える", "She could barely <i>contain</i> her excitement.", "彼女は興奮を抑えきれなかった。"),
-        ("stretch", "/stretʃ/", "verb", "stretches, stretched", "伸ばす、広がる", "Nowadays, the beach <i>stretches</i> for miles along the coast.", "近頃、そのビーチは海岸沿いに何マイルも広がっている。"),
+        ("stretch", "/stretʃ/", "verb", "stretches, stretched", "伸ばす、広がる", "The beach <i>stretches</i> for miles along the coast.", "そのビーチは海岸沿いに何マイルも広がっている。"),
         ("award", "/əˈwɔːrd/", "verb", "awards, awarded", "授与する", "She was <i>awarded</i> a scholarship for her research.", "彼女は研究に対して奨学金を授与された。"),
         ("guard", "/ɡɑːrd/", "verb", "guards, guarded", "守る、警備する", "Every night, two dogs <i>guard</i> the house.", "毎晩、2匹の犬がその家を守っている。"),
         ("trap", "/træp/", "verb", "traps, trapped", "閉じ込める、わなにかける", "The workers were <i>trapped</i> inside the elevator.", "作業員たちはエレベーターの中に閉じ込められた。"),

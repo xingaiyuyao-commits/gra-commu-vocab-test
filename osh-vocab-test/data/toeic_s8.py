@@ -15,7 +15,7 @@ SERIES[8] = dict(
         ("quit", "/kwɪt/", "verb", "quits, quit", "辞める",
          "Last month, she <i>quit</i> her job to start her own business.", "先月、彼女は自分のビジネスを始めるために仕事を辞めた。"),
         ("cater", "/ˈkeɪ.t̬ɚ/", "verb", "caters, catered", "料理を提供する、対応する",
-         "This restaurant currently <i>caters</i> to large corporate events.", "このレストランは現在、大規模な企業イベントに対応している。"),
+         "This restaurant <i>caters</i> to large corporate events.", "このレストランは大規模な企業イベントに対応している。"),
         ("calculate", "/ˈkæl.kjə.leɪt/", "verb", "calculates, calculated", "計算する",
          "Please <i>calculate</i> the total cost including tax.", "税込みの合計金額を計算してください。"),
         ("omit", "/oʊˈmɪt/", "verb", "omits, omitted", "省略する",
