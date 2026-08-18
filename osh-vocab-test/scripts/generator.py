@@ -205,6 +205,7 @@ IRREGULAR_ANSWER_IPA = {
     ('come up with', 'came up with'): '/keɪm ʌp wɪð/',
     ("none of one's business", 'none of your business'): '/nʌn ʌv jɔːr ˈbɪz.nəs/',
     ('come to', 'came to'): '/keɪm tuː/',
+    ('give to', 'gives to'): '/ɡɪvz tuː/',
     ('end up', 'ended up'): '/ˈen.dɪd ʌp/',
     ('look forward to', 'looking forward to'): '/ˈlʊk.ɪŋ ˈfɔːr.wɚd tuː/',
     ('come across', 'came across'): '/keɪm əˈkrɔːs/',

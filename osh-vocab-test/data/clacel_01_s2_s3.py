@@ -61,7 +61,7 @@ SERIES[3] = dict(
         ("hurt", "/hɝːt/", "verb", "hurts, hurt", "傷つける", "Yesterday, his harsh comment really <i>hurt</i> her feelings.", "昨日、彼のきつい発言は本当に彼女の気持ちを傷つけた。"),
         ("spill", "/spɪl/", "verb", "spills, spilled", "こぼす", "This morning, he <i>spilled</i> coffee all over his desk.", "今朝、彼はコーヒーを机中にこぼしてしまった。"),
         ("imagine", "/ɪˈmædʒ.ɪn/", "verb", "imagines, imagined", "想像する", "Try to <i>imagine</i> living without electricity.", "電気なしで暮らすことを想像してみてください。"),
-        ("reply", "/rɪˈplaɪ/", "verb", "replies, replied", "返事をする", "She <i>replied</i> to my email within an hour.", "彼女は1時間以内に私のメールに返信した。"),
+        ("reply", "/rɪˈplaɪ/", "verb", "replies, replied", "返事をする", "Last week, she <i>replied</i> to my email within an hour.", "先週、彼女は1時間以内に私のメールに返信した。"),
         ("encourage", "/ɪnˈkɝː.ɪdʒ/", "verb", "encourages, encouraged", "励ます、促す", "Last year, her teacher <i>encouraged</i> her to apply for the scholarship.", "去年、先生は彼女に奨学金に応募するよう勧めた。"),
         ("deliver", "/dɪˈlɪv.ɚ/", "verb", "delivers, delivered", "配達する、（演説を）行う", "Last week, the company <i>delivered</i> the package a day early.", "先週、その会社は荷物を1日早く配達した。"),
         ("survive", "/sɚˈvaɪv/", "verb", "survives, survived", "生き延びる", "Few buildings <i>survived</i> last year's earthquake.", "去年の地震を生き延びた建物はほとんどなかった。"),

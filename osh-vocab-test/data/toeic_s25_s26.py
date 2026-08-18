@@ -42,7 +42,7 @@ SERIES[26] = dict(
         ("endorse", "/ɪnˈdɔːrs/", "verb", "endorses, endorsed", "支持する、推薦する", "Last year, the celebrity <i>endorsed</i> the new product.", "昨年、その有名人は新製品を宣伝した。"),
         ("engage", "/ɪnˈɡeɪdʒ/", "verb", "engages, engaged", "従事させる、引き付ける", "Last week, the speaker <i>engaged</i> the audience with real examples.", "先週、その講演者は実例で聴衆を引き付けた。"),
         ("enlist", "/ɪnˈlɪst/", "verb", "enlists, enlisted", "協力を求める、入隊する", "The manager decided to <i>enlist</i> help from another department.", "マネージャーは他部署から協力を求めることに決めた。"),
-        ("escalate", "/ˈes.kə.leɪt/", "verb", "escalates, escalated", "エスカレートする、拡大する", "Last week, the dispute <i>escalated</i> quickly.", "先週、その論争は急速にエスカレートした。"),
+        ("escalate", "/ˈes.kə.leɪt/", "verb", "escalates, escalated", "拡大する", "Last week, the dispute <i>escalated</i> quickly.", "先週、その論争は急速にエスカレートした。"),
         ("exceed", "/ɪkˈsiːd/", "verb", "exceeds, exceeded", "超える", "Sales this quarter will <i>exceed</i> last year's total.", "今四半期の売上は昨年の総計を超える予定だ。"),
         ("extend", "/ɪkˈstend/", "verb", "extends, extended", "延長する", "Please <i>extend</i> the deadline by one week.", "締め切りを1週間延長してください。"),
         ("file", "/faɪl/", "verb", "files, filed", "提出する、申請する", "Last month, the company <i>filed</i> a patent for its new invention.", "先月、その会社は新しい発明の特許を出願した。"),
@@ -52,7 +52,7 @@ SERIES[26] = dict(
         ("hire", "/haɪr/", "verb", "hires, hired", "雇う", "The company plans to <i>hire</i> ten new employees this year.", "その会社は今年、新入社員を10人雇う計画だ。"),
         ("implement", "/ˈɪm.plə.ment/", "verb", "implements, implemented", "実施する", "Last quarter, the school <i>implemented</i> a new grading system.", "前四半期、その学校は新しい成績評価システムを実施した。"),
         ("launch", "/lɔːntʃ/", "verb", "launches, launched", "開始する、発売する", "The company will <i>launch</i> the new product next month.", "その会社は来月、新製品を発売する予定だ。"),
-        ("sponsor", "/ˈspɑːn.sɚ/", "verb", "sponsors, sponsored", "後援する、スポンサーになる", "Last year, the bank <i>sponsored</i> the annual charity run.", "昨年、その銀行は毎年恒例のチャリティーランを後援した。"),
+        ("sponsor", "/ˈspɑːn.sɚ/", "verb", "sponsors, sponsored", "後援する", "Last year, the bank <i>sponsored</i> the annual charity run.", "昨年、その銀行は毎年恒例のチャリティーランを後援した。"),
         ("sign", "/saɪn/", "verb", "signs, signed", "署名する", "Please <i>sign</i> the contract before Friday.", "金曜日までに契約書に署名してください。"),
     ],
 )

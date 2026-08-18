@@ -273,7 +273,7 @@ SERIES[23] = dict(
         ("dense", "/dens/", "adjective", "", "密生した、密集した", "The forest was too <i>dense</i> to walk through easily.", "その森は簡単には歩き抜けられないほど密生していた。"),
         ("differential", "/ˌdɪf.əˈren.ʃəl/", "adjective", "", "差異のある、差別的な", "The two groups showed a clear <i>differential</i> response to treatment.", "その二つのグループは治療に対して明確に異なる反応を示した。"),
         ("elastic", "/ɪˈlæs.tɪk/", "adjective", "", "弾力性のある", "The material is highly <i>elastic</i> and returns to its shape.", "その素材は非常に弾力性があり、元の形に戻る。"),
-        ("elite", "/eɪˈliːt/", "adjective", "", "エリートの、選ばれた", "Only an <i>elite</i> group of athletes qualified for the finals.", "エリート集団の選手たちだけが決勝に進んだ。"),
+        ("elite", "/eɪˈliːt/", "adjective", "", "選ばれた", "Only an <i>elite</i> group of athletes qualified for the finals.", "エリート集団の選手たちだけが決勝に進んだ。"),
         ("evolutionary", "/ˌev.əˈluː.ʃə.ner.i/", "adjective", "", "進化上の", "The trait offers a clear <i>evolutionary</i> advantage.", "その特徴は明確な進化上の利点をもたらす。"),
         ("fluid", "/ˈfluː.ɪd/", "adjective", "", "流暢な、流動的な", "Her writing style is <i>fluid</i> and easy to follow.", "彼女の文体は流暢で読みやすい。"),
         ("implicit", "/ɪmˈplɪs.ɪt/", "adjective", "", "暗黙の", "There was an <i>implicit</i> agreement between the two parties.", "その二者の間には暗黙の合意があった。"),

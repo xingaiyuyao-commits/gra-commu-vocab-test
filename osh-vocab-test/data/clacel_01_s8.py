@@ -8,7 +8,7 @@ SERIES[8] = dict(
     expected_count=19,
     words=[
         ("change", "/tʃeɪndʒ/", "verb", "changes, changed", "変える、変わる", "Yesterday, the weather <i>changed</i> suddenly in the afternoon.", "昨日、午後になって天気が急に変わった。"),
-        ("taste", "/teɪst/", "verb", "tastes, tasted", "味わう、経験する", "She <i>tasted</i> success early in her career.", "彼女はキャリアの早い段階で成功を味わった。"),
+        ("taste", "/teɪst/", "verb", "tastes, tasted", "味わう、経験する", "For the first time in her career, she <i>tasted</i> success.", "彼女はキャリアで初めて成功を味わった。"),
         ("suppose", "/səˈpoʊz/", "verb", "supposes, supposed", "想定する、〜だと思う", "I still <i>suppose</i> he'll be late again.", "彼はまた遅刻するだろうと私は今でも思っている。"),
         ("burn", "/bɝːn/", "verb", "burns, burned", "燃える、ひりひりする", "The soup was so hot it <i>burned</i> my tongue.", "そのスープはとても熱くて舌を火傷した。"),
         ("hit", "/hɪt/", "verb", "hits, hit", "打つ、達する", "Sales <i>hit</i> a record high this quarter.", "今四半期、売上は過去最高を記録した。"),

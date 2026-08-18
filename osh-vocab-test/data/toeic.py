@@ -68,7 +68,7 @@ SERIES[3] = dict(
         ("invoice", "/ˈɪn.vɔɪs/", "noun", "pl. invoices", "請求書", "The supplier sent an <i>invoice</i> for last month's order.", "仕入先は先月分の注文の請求書を送ってきた。"),
         ("brochure", "/broʊˈʃʊr/", "noun", "pl. brochures", "パンフレット", "Pick up a <i>brochure</i> for details about the tour.", "ツアーの詳細はパンフレットを手に取ってご覧ください。"),
         ("applicant", "/ˈæp.lɪ.kənt/", "noun", "pl. applicants", "応募者", "Each <i>applicant</i> must attend an interview.", "各応募者は面接を受けなければならない。"),
-        ("receipt", "/rɪˈsiːt/", "noun", "pl. receipts", "レシート、領収書", "Keep your <i>receipt</i> in case you return the item.", "商品を返品する場合に備えてレシートを保管しておいてください。"),
+        ("receipt", "/rɪˈsiːt/", "noun", "pl. receipts", "領収書", "Keep your <i>receipt</i> in case you return the item.", "商品を返品する場合に備えてレシートを保管しておいてください。"),
         ("shipment", "/ˈʃɪp.mənt/", "noun", "pl. shipments", "発送、出荷", "The <i>shipment</i> of supplies arrived this morning.", "今朝、物資の発送が届いた。"),
         ("warranty", "/ˈwɔːr.ən.ti/", "noun", "pl. warranties", "保証（書）", "This laptop comes with a two-year <i>warranty</i>.", "このノートパソコンには2年間の保証が付いている。"),
         ("inventory", "/ˈɪn.vən.tɔːr.i/", "noun", "pl. inventories", "在庫（品）", "The staff check the <i>inventory</i> every month.", "スタッフは毎月在庫を確認する。"),

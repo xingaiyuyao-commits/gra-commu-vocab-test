@@ -66,7 +66,7 @@ SERIES[5] = dict(
         ("trust", "/trʌst/", "verb", "trusts, trusted", "信頼する", "You can <i>trust</i> him to keep his promise.", "彼は約束を守ると信頼できる。"),
         ("dress", "/dres/", "verb", "dresses, dressed", "服を着せる、着る", "Yesterday, she <i>dressed</i> quickly and left for work.", "昨日、彼女は急いで着替えて仕事に出かけた。"),
         ("act", "/ækt/", "verb", "acts, acted", "行動する、演じる", "We need to <i>act</i> quickly before it's too late.", "手遅れになる前に素早く行動する必要がある。"),
-        ("climb", "/klaɪm/", "verb", "climbs, climbed", "登る", "They <i>climbed</i> the mountain in six hours.", "彼らは6時間でその山に登った。"),
+        ("climb", "/klaɪm/", "verb", "climbs, climbed", "登る", "Last summer, they <i>climbed</i> the mountain in six hours.", "去年の夏、彼らは6時間でその山に登った。"),
         ("chat", "/tʃæt/", "verb", "chats, chatted", "おしゃべりする", "Yesterday, we <i>chatted</i> about our weekend plans.", "昨日、私たちは週末の予定についておしゃべりした。"),
         ("believe", "/bɪˈliːv/", "verb", "believes, believed", "信じる", "I still <i>believe</i> she is telling the truth.", "私は今でも彼女が本当のことを言っていると思う。"),
         ("mention", "/ˈmen.ʃən/", "verb", "mentions, mentioned", "言及する", "Yesterday, he <i>mentioned</i> that he might move abroad.", "昨日、彼は海外に引っ越すかもしれないと言っていた。"),
