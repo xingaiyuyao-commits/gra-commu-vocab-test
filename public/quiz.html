@@ -245,6 +245,7 @@
 
   <!-- 結果 -->
   <div class="screen" id="screen-results">
+    <p style="text-align:center; font-size:.85rem; color:var(--muted-foreground);" id="results-set"></p>
     <div class="card" id="personal-score-card">
       <p style="text-align:center; font-size:2rem; font-weight:800;" id="personal-score"></p>
       <p style="text-align:center; color:var(--muted-foreground);" id="personal-accuracy"></p>
@@ -546,8 +547,9 @@
   });
 
   // --- 結果 ---
-  function renderResults({ perfect, review }) {
+  function renderResults({ setLabel, perfect, review }) {
     clearQuizTimer();
+    $("results-set").textContent = setLabel || "";
     const result = QuizUi.calculateResult(answers, review);
     $("personal-score").textContent = `${result.score} / ${result.total}点`;
     $("personal-accuracy").textContent = `正答率 ${result.accuracy}%`;

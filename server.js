@@ -717,6 +717,7 @@ function quizRevealResults(roomCode) {
     .map((e) => ({ id: e.id, name: e.name, timeMs: e.timeMs }));
   const others = entries.filter((e) => e.score !== e.total);
   room.results = {
+    setLabel: room.setLabel,
     perfect,
     others,
     review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, altAnswers: q.altAnswers, ja: q.ja, sentenceJa: q.sentenceJa })),
