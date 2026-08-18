@@ -345,7 +345,7 @@ test("結果画面: どのコース・Dayだったかが表示される", () => 
   assert.match(document.getElementById("results-set").textContent, /Clacel Day 1/);
 });
 
-test("結果画面: ホストは進行役なので自分の点数・正答率・コメントは表示せず、満点者と答え合わせだけ表示される", () => {
+test("結果画面: ホストは進行役なので自分の点数・正答率・コメント・答え合わせは表示せず、満点者だけ表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
   const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
@@ -370,7 +370,7 @@ test("結果画面: ホストは進行役なので自分の点数・正答率・
 
   assert.equal(document.getElementById("personal-score-card").style.display, "none");
   assert.equal(document.getElementById("encourage-card").style.display, "none");
+  assert.equal(document.getElementById("review-card").style.display, "none");
   assert.notEqual(document.getElementById("perfect-list").style.display, "none");
   assert.match(document.getElementById("perfect-list").innerHTML, /Aica/);
-  assert.match(document.getElementById("review").innerHTML, /drink/);
 });

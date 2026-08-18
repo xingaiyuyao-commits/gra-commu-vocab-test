@@ -263,7 +263,7 @@
       <p style="font-weight:700; text-align:center; margin-bottom:6px;">💪 明日は満点を目指そう！</p>
       <p style="text-align:center; color:var(--muted-foreground); font-size:.9rem;">間違えた単語はスクショやノートに残して、忘れないうちに復習しよう</p>
     </div>
-    <div class="card">
+    <div class="card" id="review-card">
       <p style="font-weight:600; margin-bottom:8px;">答え合わせ</p>
       <div id="review"></div>
     </div>
@@ -573,6 +573,7 @@
     const iAmPerfect = perfect.some((p) => p.id === playerId);
     // ホストは回答していない進行役なので、自分の点数・正答率・コメントは意味を持たない
     $("personal-score-card").style.display = isHost ? "none" : "";
+    $("review-card").style.display = isHost ? "none" : "";
     $("encourage-card").style.display = (isHost || iAmPerfect) ? "none" : "";
     $("review").innerHTML = review.map((r, i) => {
       const mine = (answers[i] || "").trim().toLowerCase();
