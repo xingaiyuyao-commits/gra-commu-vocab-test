@@ -799,14 +799,26 @@
     $("btn-join").classList.remove("secondary");
   }
 
-  // 参加用リンク（?room=AB3K9P）で開かれたときは、コードを手で打たせない
+  // 参加用リンク（?room=AB3K9P）で開かれたときは、コードを手で打たせない（URL-only join）
   const presetRoom = new URLSearchParams(location.search).get("room");
   if (presetRoom) {
     $("room").value = presetRoom.toUpperCase().slice(0, 6);
+    // If opened via join URL with room param, hide the manual join-section so participants don't see code input.
     if (entryMode !== "create") {
       $("create-section").style.display = "none";
+      // hide the join-section entirely (keep hidden input for existing JS)
+      const joinSec = $("join-section");
+      if (joinSec) joinSec.style.display = "none";
+      // ensure btn-join appears as primary for keyboard users
       $("btn-join").classList.remove("secondary");
       $("name").focus();
+    }
+    // also disable the room input to avoid edits
+    const roomInput = $("room");
+    if (roomInput) {
+      roomInput.disabled = true;
+      roomInput.setAttribute('aria-hidden', 'true');
+      roomInput.style.display = 'none';
     }
   }
 
