@@ -14,7 +14,7 @@ SERIES[6] = dict(
         ("in person", "/ɪn ˈpɝː.sən/", "phrase", "", "直接会って、本人が", "I'd rather explain the situation <i>in person</i>.", "その状況は直接会って説明したい。"),
         ("none of one's business", "/nʌn ʌv wʌnz ˈbɪz.nəs/", "phrase", "", "他人には関係ないこと", "Who I invite to my party is <i>none of your business</i>.", "私が誰をパーティーに招待しようと、あなたには関係ない。"),
         ("to some extent", "/tuː sʌm ɪkˈstent/", "phrase", "", "ある程度は", "I agree with your opinion <i>to some extent</i>.", "あなたの意見にはある程度賛成だ。"),
-        ("come to", "/kʌm tuː/", "phrase", "comes to, came to", "合計で〜になる", "With tax, the total bill <i>came to</i> $42.", "税込みで、合計金額は42ドルになった。"),
+        ("come to", "/kʌm tuː/", "phrase", "comes to, came to", "合計で〜になる", "Yesterday, with tax, the total bill <i>came to</i> $42.", "昨日、税込みで、合計金額は42ドルになった。"),
         ("in terms of", "/ɪn tɝːmz ʌv/", "phrase", "", "〜の点では、〜に関して", "<i>In terms of</i> price, this laptop is the best option.", "価格の点では、このノートパソコンが一番の選択肢だ。"),
         ("figure out", "/ˈfɪɡ.jɚ aʊt/", "phrase", "figures out, figured out", "理解する、解決する", "It took me a while to <i>figure out</i> the puzzle.", "そのパズルを解くのにしばらく時間がかかった。"),
         ("no longer", "/noʊ ˈlɔːŋ.ɡɚ/", "phrase", "", "もはや〜ない", "He <i>no longer</i> works at that company.", "彼はもうその会社では働いていない。"),
@@ -24,7 +24,7 @@ SERIES[6] = dict(
         ("end up", "/end ʌp/", "phrase", "ends up, ended up", "結局〜することになる", "We missed the train and <i>ended up</i> waiting two hours.", "電車を逃して、結局2時間待つことになった。"),
         ("by accident", "/baɪ ˈæk.sɪ.dənt/", "phrase", "", "偶然に、うっかり", "I deleted the file completely <i>by accident</i>.", "私はうっかりそのファイルを完全に削除してしまった。"),
         ("look forward to", "/lʊk ˈfɔːr.wɚd tuː/", "phrase", "looks forward to, looked forward to", "楽しみにする", "We're really <i>looking forward to</i> the summer festival.", "私たちは夏祭りを本当に楽しみにしている。"),
-        ("come across", "/kʌm əˈkrɔːs/", "phrase", "comes across, came across", "偶然出会う", "I <i>came across</i> an old letter while cleaning the attic.", "屋根裏を掃除していたら古い手紙を偶然見つけた。"),
+        ("come across", "/kʌm əˈkrɔːs/", "phrase", "comes across, came across", "偶然出会う", "Last weekend, I <i>came across</i> an old letter while cleaning the attic.", "先週末、屋根裏を掃除していたら古い手紙を偶然見つけた。"),
         ("due to", "/duː tuː/", "phrase", "", "〜のために、〜が原因で", "The game was cancelled <i>due to</i> heavy rain.", "その試合は大雨のため中止になった。"),
     ],
     fib=[

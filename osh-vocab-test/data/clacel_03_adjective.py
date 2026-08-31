@@ -25,7 +25,7 @@ SERIES[4] = dict(
         ("present", "/ˈprez.ənt/", "adjective", "", "現在の、出席して", "All employees were <i>present</i> at the meeting.", "全従業員がその会議に出席していた。"),
         ("individual", "/ˌɪn.dəˈvɪdʒ.u.əl/", "adjective", "", "個々の", "Each <i>individual</i> student received feedback.", "個々の生徒がフィードバックを受け取った。"),
         ("temporary", "/ˈtem.pə.rer.i/", "adjective", "", "一時的な", "She took a <i>temporary</i> job over the summer.", "彼女は夏の間、一時的な仕事に就いた。"),
-        ("occupied", "/ˈɑː.kjə.paɪd/", "adjective", "", "使用中の、忙しい", "The restroom is currently <i>occupied</i>.", "そのお手洗いは現在使用中です。"),
+        ("occupied", "/ˈɑː.kjə.paɪd/", "adjective", "", "使用中の、忙しい", "The restroom is <i>occupied</i>.", "そのお手洗いは使用中です。"),
     ],
     fib=[
         ("Is this seat ______?", "available"),
