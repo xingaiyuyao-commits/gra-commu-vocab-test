@@ -1,0 +1,30 @@
+*** Begin Patch
+*** Update File: public/quiz.html
+@@
+-      <div id="join-section">
+-        <label for="room" style="margin-top:20px">ルームコード</label>
+-        <input id="room" maxlength="6" placeholder="例: AB3K9P" style="text-transform: uppercase;" aria-describedby="entry-error" />
+-        <button id="btn-join" class="secondary">参加する</button>
+-      </div>
++      <div id="join-section" hidden>
++        <input id="room" maxlength="6" placeholder="例: AB3K9P" style="text-transform: uppercase; display:none;" aria-describedby="entry-error" disabled />
++        <button id="btn-join" class="secondary">URLから参加</button>
++      </div>
+@@
+-    if (qrId && $(qrId)) $(qrId).innerHTML = `<img src="/quiz/qr.svg?text=${encodeURIComponent(url)}" alt="参加用リンクのQRコード" />`;
++    if (qrId && $(qrId)) $(qrId).hidden = true;
+@@
+-$("btn-join").addEventListener("click", () => {
+-    const name = $("name").value.trim();
+-    if (!name) return ($("entry-error").textContent = "名前を入力してください");
+-    $("entry-error").textContent = "";
+-    socket.emit("quiz:joinRoom", { roomCode: $("room").value, name }, onEntered);
+-  });
++$("btn-join").addEventListener("click", () => {
++    const name = $("name").value.trim();
++    if (!name) return ($("entry-error").textContent = "名前を入力してください");
++    $("entry-error").textContent = "";
++    const roomCode = (typeof presetRoom !== "undefined" && presetRoom) ? presetRoom.toUpperCase().slice(0,6) : ($("room") ? $("room").value : "");
++    socket.emit("quiz:joinRoom", { roomCode, name }, onEntered);
++  });
+*** End Patch
