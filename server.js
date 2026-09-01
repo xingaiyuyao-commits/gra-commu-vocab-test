@@ -34,6 +34,7 @@ const io = new Server(server);
 process.on("uncaughtException", (err) => console.error("uncaughtException:", err));
 process.on("unhandledRejection", (err) => console.error("unhandledRejection:", err));
 
+app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const TOTAL_QUESTIONS = 20;
