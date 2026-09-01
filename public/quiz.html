@@ -273,6 +273,7 @@
     <div class="card">
       <label for="name">名前</label>
       <input id="name" maxlength="12" placeholder="例：コミュニティ名" aria-describedby="entry-error" />
+      <p id="join-course-label" style="display:none; margin-bottom:8px; font-size:0.95rem; color:var(--muted-foreground);">あなたのコース: <strong id="join-course-name"></strong></p>
       <div id="create-section">
         <p class="mh-intro">コースごとに好きなタイミングでルームを作成できます</p>
         <div class="mh-row">
@@ -725,15 +726,25 @@
   }
 
   // ルームコードを手入力させずに済むよう、参加URLとQRを出す
-  function joinUrlFor(roomCode) {
-    return `${location.origin}${location.pathname}?mode=join&room=${encodeURIComponent(roomCode)}`;
+  // joinUrlFor accepts optional category to include in the shared link as ?cat=clacel (optional)
+  function joinUrlFor(roomCode, category) {
+    try {
+      const url = new URL(location.origin + location.pathname);
+      url.searchParams.set('mode', 'join');
+      url.searchParams.set('room', roomCode);
+      if (category) url.searchParams.set('cat', category);
+      return url.toString();
+    } catch (e) {
+      // fallback
+      return `${location.origin}${location.pathname}?mode=join&room=${encodeURIComponent(roomCode)}${category ? `&cat=${encodeURIComponent(category)}` : ''}`;
+    }
   }
 
-  function renderJoinShare(shareId, urlId, qrId, copyId, roomCode) {
+  function renderJoinShare(shareId, urlId, qrId, copyId, roomCode, category) {
     const box = $(shareId);
     if (!box) return;
     if (!roomCode) return (box.hidden = true);
-    const url = joinUrlFor(roomCode);
+    const url = joinUrlFor(roomCode, category);
     box.hidden = false;
     $(urlId).textContent = url;
     if (qrId && $(qrId)) $(qrId).hidden = true;
@@ -820,6 +831,16 @@
       roomInput.setAttribute('aria-hidden', 'true');
       roomInput.style.display = 'none';
     }
+
+    // If a course identifier is provided in the URL (cat=clacel/toeic/ielts), show it above the name input
+    const presetCat = new URLSearchParams(location.search).get('cat');
+    if (presetCat) {
+      const courseLabel = $('join-course-label');
+      const courseNameEl = $('join-course-name');
+      const nice = (CATEGORY_LABEL && CATEGORY_LABEL[presetCat]) ? CATEGORY_LABEL[presetCat] : (presetCat || '');
+      if (courseNameEl) courseNameEl.textContent = nice;
+      if (courseLabel) courseLabel.style.display = '';
+    }
   }
 
   function onEntered(res) {
@@ -832,7 +853,7 @@
     seriesMeta = res.seriesMeta || [];
     $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
     $("lobby-code").textContent = res.roomCode;
-    if (res.isHost) renderJoinShare("lobby-share", "lobby-join-url", "lobby-qr", "lobby-copy", res.roomCode);
+    if (res.isHost) renderJoinShare("lobby-share", "lobby-join-url", "lobby-qr", "lobby-copy", res.roomCode, res.category);
     fillSeries();
     if (res.phase === "playing") return enterStartedQuiz(res);
     show("screen-lobby");
@@ -990,7 +1011,7 @@
         mh[category].seriesNames = res.seriesNames || [];
         mh[category].seriesMeta = res.seriesMeta || [];
         mh[category].endsAt = res.endsAt || 0;
-        renderJoinShare(`mh-${category}-share`, `mh-${category}-join-url`, `mh-${category}-qr`, `mh-${category}-copy`, mh[category].roomCode);
+        renderJoinShare(`mh-${category}-share`, `mh-${category}-join-url`, `mh-${category}-qr`, `mh-${category}-copy`, mh[category].roomCode, category);
         mhFillSeries(category);
         if (res.phase === "playing") {
           $(`mh-${category}-progress`).textContent = `提出状況 ${res.submittedCount} / ${res.totalCount}人`;
@@ -1047,7 +1068,7 @@
         mh[category].seriesNames = res.seriesNames || [];
         mh[category].seriesMeta = res.seriesMeta || [];
         mhFillSeries(category);
-        renderJoinShare(`mh-${category}-share`, `mh-${category}-join-url`, `mh-${category}-qr`, `mh-${category}-copy`, res.roomCode);
+        renderJoinShare(`mh-${category}-share`, `mh-${category}-join-url`, `mh-${category}-qr`, `mh-${category}-copy`, res.roomCode, category);
         mhRenderPlayers(category, [{ name, submitted: false }]);
         mhShow(category, "lobby");
       });
