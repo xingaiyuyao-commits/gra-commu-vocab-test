@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const quizHtml = fs.readFileSync(path.join(__dirname, "..", "public", "quiz.html"), "utf8");
+const serverJs = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
 
 test("参加リンクではコース名を名前入力より上に表示する", () => {
   const courseLabelIndex = quizHtml.indexOf('id="join-course-label"');
@@ -20,4 +21,10 @@ test("再接続したホストがコピーする参加リンクにもコース�
     quizHtml,
     /renderJoinShare\("lobby-share", "lobby-join-url", "lobby-qr", "lobby-copy", session\.roomCode, selectedCategory\)/
   );
+});
+
+test("古い参加リンクでもルーム情報からコース名を表示する", () => {
+  assert.match(quizHtml, /socket\.emit\("quiz:roomInfo", \{ roomCode: presetRoom \}/);
+  assert.match(serverJs, /socket\.on\("quiz:roomInfo"/);
+  assert.match(serverJs, /cb\(\{ category: room\.category \}\)/);
 });

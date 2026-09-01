@@ -758,6 +758,13 @@ io.on("connection", (socket) => {
     quizJoin(socket, roomCode, name, playerId, cb);
   });
 
+  socket.on("quiz:roomInfo", ({ roomCode } = {}, cb = () => {}) => {
+    const code = String(roomCode || "").toUpperCase().trim();
+    const room = quizRooms[code];
+    if (!room) return cb({ error: "ルームが見つかりません" });
+    cb({ category: room.category });
+  });
+
   socket.on("quiz:joinRoom", ({ roomCode, name, playerId } = {}, cb = () => {}) => {
     const code = String(roomCode || "").toUpperCase().trim();
     const room = quizRooms[code];

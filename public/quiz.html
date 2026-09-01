@@ -821,14 +821,22 @@
     if (joinBtn) joinBtn.classList.remove("secondary");
   }
 
-  function showCourseLabelIfNeeded() {
-    const presetCat = new URLSearchParams(location.search).get('cat');
-    if (!presetCat) return;
+  function showCourseLabel(category) {
     const courseLabel = $('join-course-label');
     const courseNameEl = $('join-course-name');
-    const nice = (CATEGORY_LABEL && CATEGORY_LABEL[presetCat]) ? CATEGORY_LABEL[presetCat] : (presetCat || '');
+    const nice = CATEGORY_LABEL[category];
+    if (!nice) return;
     if (courseNameEl) courseNameEl.textContent = `${nice}コース`;
     if (courseLabel) courseLabel.hidden = false;
+  }
+
+  function showCourseLabelIfNeeded() {
+    const presetCat = new URLSearchParams(location.search).get('cat');
+    if (CATEGORY_LABEL[presetCat]) return showCourseLabel(presetCat);
+    if (!presetRoom) return;
+    socket.emit("quiz:roomInfo", { roomCode: presetRoom }, (res) => {
+      if (res?.category) showCourseLabel(res.category);
+    });
   }
 
   // 参加用リンク（?room=AB3K9P）で開かれたときは、コードを手で打たせない（URL-only join）
