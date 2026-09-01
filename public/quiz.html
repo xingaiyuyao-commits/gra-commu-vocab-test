@@ -45,6 +45,12 @@
     padding: 24px;
     margin-bottom: 16px;
   }
+  .join-course-label {
+    margin: 0 0 12px;
+    color: var(--foreground);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
   label { font-size: .875rem; font-weight: 500; display: block; margin-bottom: 6px; }
   input, select {
     width: 100%;
@@ -271,9 +277,9 @@
   <!-- 参加/作成 -->
   <div class="screen" id="screen-entry">
     <div class="card">
+      <p id="join-course-label" class="join-course-label" hidden><strong id="join-course-name"></strong></p>
       <label for="name">名前</label>
       <input id="name" maxlength="12" placeholder="例：コミュニティ名" aria-describedby="entry-error" />
-      <p id="join-course-label" style="display:none; margin-bottom:8px; font-size:0.95rem; color:var(--muted-foreground);">あなたのコース: <strong id="join-course-name"></strong></p>
       <div id="create-section">
         <p class="mh-intro">コースごとに好きなタイミングでルームを作成できます</p>
         <div class="mh-row">
@@ -801,47 +807,56 @@
 
   // --- 参加/作成 ---
   const entryMode = new URLSearchParams(location.search).get("mode");
+  const roomInput = $("room");
+  const roomLabel = roomInput && roomInput.parentElement ? roomInput.parentElement.querySelector("label") : null;
   if (entryMode === "create") {
-    $("join-section").style.display = "none";
-    document.querySelector(".container").classList.add("wide");
+    const joinSection = $("join-section");
+    if (joinSection) joinSection.style.display = "none";
+    document.querySelector(".container")?.classList.add("wide");
   } else if (entryMode === "join") {
-    $("create-section").style.display = "none";
-    $("room").parentElement.querySelector("label").style.marginTop = "0";
-    $("btn-join").classList.remove("secondary");
+    const createSection = $("create-section");
+    if (createSection) createSection.style.display = "none";
+    if (roomLabel) roomLabel.style.marginTop = "0";
+    const joinBtn = $("btn-join");
+    if (joinBtn) joinBtn.classList.remove("secondary");
+  }
+
+  function showCourseLabelIfNeeded() {
+    const presetCat = new URLSearchParams(location.search).get('cat');
+    if (!presetCat) return;
+    const courseLabel = $('join-course-label');
+    const courseNameEl = $('join-course-name');
+    const nice = (CATEGORY_LABEL && CATEGORY_LABEL[presetCat]) ? CATEGORY_LABEL[presetCat] : (presetCat || '');
+    if (courseNameEl) courseNameEl.textContent = `${nice}コース`;
+    if (courseLabel) courseLabel.hidden = false;
   }
 
   // 参加用リンク（?room=AB3K9P）で開かれたときは、コードを手で打たせない（URL-only join）
   const presetRoom = new URLSearchParams(location.search).get("room");
   if (presetRoom) {
-    $("room").value = presetRoom.toUpperCase().slice(0, 6);
+    if (roomInput) roomInput.value = presetRoom.toUpperCase().slice(0, 6);
     // If opened via join URL with room param, hide the manual join-section so participants don't see code input.
     if (entryMode !== "create") {
-      $("create-section").style.display = "none";
+      const createSection = $("create-section");
+      if (createSection) createSection.style.display = "none";
       // hide the join-section entirely (keep hidden input for existing JS)
       const joinSec = $("join-section");
       if (joinSec) joinSec.style.display = "none";
       // ensure btn-join appears as primary for keyboard users
-      $("btn-join").classList.remove("secondary");
-      $("name").focus();
+      const joinBtn = $("btn-join");
+      if (joinBtn) joinBtn.classList.remove("secondary");
+      const nameInput = $("name");
+      if (nameInput) nameInput.focus();
     }
     // also disable the room input to avoid edits
-    const roomInput = $("room");
     if (roomInput) {
       roomInput.disabled = true;
       roomInput.setAttribute('aria-hidden', 'true');
       roomInput.style.display = 'none';
     }
-
-    // If a course identifier is provided in the URL (cat=clacel/toeic/ielts), show it above the name input
-    const presetCat = new URLSearchParams(location.search).get('cat');
-    if (presetCat) {
-      const courseLabel = $('join-course-label');
-      const courseNameEl = $('join-course-name');
-      const nice = (CATEGORY_LABEL && CATEGORY_LABEL[presetCat]) ? CATEGORY_LABEL[presetCat] : (presetCat || '');
-      if (courseNameEl) courseNameEl.textContent = nice;
-      if (courseLabel) courseLabel.style.display = '';
-    }
   }
+
+  showCourseLabelIfNeeded();
 
   function onEntered(res) {
     if (res.error) return ($("entry-error").textContent = res.error);
@@ -1472,7 +1487,7 @@
       seriesMeta = res.seriesMeta || [];
       $("lobby-category").textContent = `${CATEGORY_LABEL[selectedCategory]}のルーム`;
       $("lobby-code").textContent = session.roomCode;
-      if (isHost) renderJoinShare("lobby-share", "lobby-join-url", "lobby-qr", "lobby-copy", session.roomCode);
+      if (isHost) renderJoinShare("lobby-share", "lobby-join-url", "lobby-qr", "lobby-copy", session.roomCode, selectedCategory);
       fillSeries();
 
       const pending = loadPendingSubmission();
