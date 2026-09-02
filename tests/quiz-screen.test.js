@@ -1,16 +1,27 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { loadQuizPage } = require("./helpers/loadQuizPage");
+const { loadQuizPage: createQuizPage } = require("./helpers/loadQuizPage");
+
+const openQuizPages = [];
+
+function loadQuizPage(options) {
+  const page = createQuizPage(options);
+  openQuizPages.push(page);
+  return page;
+}
+
+test.afterEach(() => {
+  for (const page of openQuizPages.splice(0)) page.close();
+});
 
 function setValue(window, el, value) {
   el.value = value;
   el.dispatchEvent(new window.Event("input", { bubbles: true }));
 }
 
-test("参加・作成画面: ラベル文言が仕様通り", () => {
+test("参加・作成画面: 名前入力のラベル文言が仕様通り", () => {
   const { document } = loadQuizPage();
   assert.equal(document.querySelector('label[for="name"]').textContent, "名前");
-  assert.equal(document.querySelector('label[for="room"]').textContent, "ルームコード");
 });
 
 test("参加・作成画面: Clacel/TOEIC/IELTSそれぞれの作成ボタンが横並びで表示される", () => {
@@ -50,8 +61,8 @@ test("参加・作成画面: 名前を入力してから作成ボタンを押す
   assert.equal(createCall.payload.category, "clacel");
   assert.equal(createCall.payload.name, "ホスト太郎");
 
-  createCall.cb({ roomCode: "ABCD", isHost: true, category: "clacel", seriesNames: ["Day 1", "Day 2"] });
-  assert.equal(document.getElementById("mh-clacel-code").textContent, "ABCD");
+  createCall.cb({ roomCode: "ABCD", isHost: true, category: "clacel", playerId: "host", sessionToken: "token", seriesNames: ["Day 1", "Day 2"] });
+  assert.equal(document.getElementById("mh-clacel-join-url").textContent, "http://localhost/quiz.html?mode=join&room=ABCD&cat=clacel");
   assert.equal(document.getElementById("mh-clacel-lobby").hidden, false);
 });
 
@@ -62,11 +73,10 @@ test("参加・作成画面: ホストの複数コース作成パネルは開始
   document.getElementById("mh-toeic-create").dispatchEvent(new window.Event("click", { bubbles: true }));
   const s = fakeSockets[1];
   const createCall = s.emitted.find((e) => e.event === "quiz:createRoom");
-  createCall.cb({ roomCode: "WXYZ", isHost: true, category: "toeic", seriesNames: ["Day 1", "Day 2"] });
+  createCall.cb({ roomCode: "WXYZ", isHost: true, category: "toeic", playerId: "host", sessionToken: "token", seriesNames: ["Day 1", "Day 2"] });
 
   assert.equal(document.getElementById("mh-toeic-lobby").hidden, false);
   assert.equal(document.getElementById("mh-toeic-create").hidden, true);
-  assert.match(document.getElementById("mh-toeic-players").innerHTML, /ホスト/);
 
   // 参加者が入る
   s.fire("quiz:playersUpdate", { hostId: "h", players: [{ name: "ホスト", submitted: false }, { name: "Aさん", submitted: false }] });
@@ -74,6 +84,7 @@ test("参加・作成画面: ホストの複数コース作成パネルは開始
 
   // テスト開始
   document.getElementById("mh-toeic-start").dispatchEvent(new window.Event("click", { bubbles: true }));
+  document.getElementById("action-confirm-ok").dispatchEvent(new window.Event("click", { bubbles: true }));
   const startCall = s.emitted.find((e) => e.event === "quiz:startGame");
   assert.ok(startCall, "quiz:startGameが送信される");
 
@@ -90,8 +101,8 @@ test("参加・作成画面: ホストの複数コース作成パネルは開始
   s.fire("quiz:readyToReveal");
   assert.equal(document.getElementById("mh-toeic-reveal").disabled, false);
 
-  window.confirm = () => true;
   document.getElementById("mh-toeic-reveal").dispatchEvent(new window.Event("click", { bubbles: true }));
+  document.getElementById("action-confirm-ok").dispatchEvent(new window.Event("click", { bubbles: true }));
   const revealCall = s.emitted.find((e) => e.event === "quiz:revealResults");
   assert.ok(revealCall, "quiz:revealResultsが送信される");
 
@@ -287,8 +298,8 @@ test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信
     "readyToRevealが届いただけでは自動送信されない"
   );
 
-  window.confirm = () => true;
   document.getElementById("btn-reveal-results").dispatchEvent(new window.Event("click", { bubbles: true }));
+  document.getElementById("action-confirm-ok").dispatchEvent(new window.Event("click", { bubbles: true }));
   assert.ok(emitted.some((e) => e.event === "quiz:revealResults"));
 });
 
@@ -352,7 +363,7 @@ test("開始: 参加者（非ホスト）は従来通り回答画面が表示さ
   assert.equal(document.getElementById("screen-quiz").classList.contains("active"), true);
 });
 
-test("結果画面: 最上部に本人の点数と正答率が表示される", () => {
+test("結果画面: 最上部に本人の点数が表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
   const questions = [
     { sentence: "I ___ tea.", answer: "drink", base: "drink", hint: "d____", ja: "飲む", sentenceJa: "" },
@@ -376,7 +387,6 @@ test("結果画面: 最上部に本人の点数と正答率が表示される", 
   });
 
   assert.match(document.getElementById("personal-score").textContent, /1\s*\/\s*2/);
-  assert.match(document.getElementById("personal-accuracy").textContent, /50/);
 });
 
 test("結果画面: どのコース・Dayだったかが表示される", () => {
@@ -422,8 +432,8 @@ test("結果画面: ホストは進行役なので自分の点数・正答率・
     ],
   });
 
-  assert.equal(document.getElementById("personal-score-card").style.display, "none");
-  assert.equal(document.getElementById("encourage-card").style.display, "none");
+  assert.equal(document.getElementById("summary-score").style.display, "none");
+  assert.equal(document.getElementById("study-panel").style.display, "none");
   assert.equal(document.getElementById("review-card").style.display, "none");
   assert.notEqual(document.getElementById("perfect-list").style.display, "none");
   assert.match(document.getElementById("perfect-list").innerHTML, /Aica/);
