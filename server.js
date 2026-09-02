@@ -930,13 +930,13 @@ io.on("connection", (socket) => {
       p.submittedAt = null;
       p.score = 0;
     }
+    persistQuizRooms();
     io.to(roomCode).emit("quiz:started", {
       setLabel: room.setLabel,
       total: room.questions.length,
       endsAt: room.endsAt,
       questions: quizSanitizedQuestions(room),
     });
-    persistQuizRooms();
   });
 
   socket.on("quiz:submit", ({ answers } = {}) => {
