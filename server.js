@@ -617,9 +617,78 @@ app.post("/api/admin/wordtests/:category", express.json({ limit: "2mb" }), check
   }
 });
 
-const quizRooms = {}; // roomCode -> room state
 const QUIZ_CATEGORIES = ["clacel", "ielts", "toeic"];
-const QUIZ_RECONNECT_GRACE_MS = 20000; // リロードで一瞬切断されても復帰できる猶予
+const QUIZ_ROOM_STATE_FILE = process.env.QUIZ_ROOM_STATE_FILE
+  || (fs.existsSync("/data") ? "/data/quiz-rooms.json" : null);
+
+function loadQuizRooms() {
+  if (!QUIZ_ROOM_STATE_FILE) return {};
+  try {
+    const saved = JSON.parse(fs.readFileSync(QUIZ_ROOM_STATE_FILE, "utf8"));
+    const restored = {};
+    for (const [code, room] of Object.entries(saved.rooms || {})) {
+      if (!/^[A-Z2-9]{4}$/.test(code) || !room || !QUIZ_CATEGORIES.includes(room.category)) continue;
+      if (!room.players || typeof room.players !== "object" || !room.players[room.host]) continue;
+      restored[code] = {
+        category: room.category,
+        host: room.host,
+        phase: ["lobby", "playing", "finished"].includes(room.phase) ? room.phase : "lobby",
+        players: Object.fromEntries(Object.entries(room.players).map(([id, player]) => [id, {
+          name: String(player.name || "名無し").slice(0, 12),
+          sessionToken: String(player.sessionToken || ""),
+          submittedAt: player.submittedAt ?? null,
+          score: Number(player.score) || 0,
+          leaveTimer: null,
+        }])),
+        questions: Array.isArray(room.questions) ? room.questions : [],
+        startedAt: Number(room.startedAt) || 0,
+        endsAt: Number(room.endsAt) || 0,
+        setLabel: String(room.setLabel || ""),
+        results: room.results || null,
+        timeoutHandle: null,
+      };
+    }
+    return restored;
+  } catch (error) {
+    if (error.code !== "ENOENT") console.error("quiz room restore failed:", error.message);
+    return {};
+  }
+}
+
+const quizRooms = loadQuizRooms(); // roomCode -> room state
+
+function persistQuizRooms() {
+  if (!QUIZ_ROOM_STATE_FILE) return;
+  const rooms = {};
+  for (const [code, room] of Object.entries(quizRooms)) {
+    rooms[code] = {
+      category: room.category,
+      host: room.host,
+      phase: room.phase,
+      players: Object.fromEntries(Object.entries(room.players).map(([id, player]) => [id, {
+        name: player.name,
+        sessionToken: player.sessionToken,
+        submittedAt: player.submittedAt,
+        score: player.score,
+      }])),
+      questions: room.questions,
+      startedAt: room.startedAt,
+      endsAt: room.endsAt,
+      setLabel: room.setLabel,
+      results: room.results,
+    };
+  }
+  const directory = path.dirname(QUIZ_ROOM_STATE_FILE);
+  const temporaryFile = `${QUIZ_ROOM_STATE_FILE}.${process.pid}.tmp`;
+  try {
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(temporaryFile, JSON.stringify({ version: 1, rooms }), { mode: 0o600 });
+    fs.renameSync(temporaryFile, QUIZ_ROOM_STATE_FILE);
+  } catch (error) {
+    console.error("quiz room save failed:", error.message);
+    try { fs.unlinkSync(temporaryFile); } catch {}
+  }
+}
 
 function makeQuizRoomCode() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -699,6 +768,7 @@ function quizForceFinish(roomCode) {
       room.players[p.id].submittedAt = Date.now();
     }
   }
+  persistQuizRooms();
   quizCheckAllSubmitted(roomCode);
 }
 
@@ -742,22 +812,31 @@ function quizRevealResults(roomCode) {
     others,
     review: room.questions.map((q) => ({ sentence: q.sentence, answer: q.answer, altAnswers: q.altAnswers, ja: q.ja, sentenceJa: q.sentenceJa })),
   };
+  persistQuizRooms();
   io.to(roomCode).emit("quiz:results", room.results);
 }
 
-// 猶予時間内に戻ってこなかった/明示的に退出した参加者を実際にルームから外す
+// 通信切断では呼ばず、画面の「退出」操作だけで参加者またはルームを削除する。
 function quizFinalizePlayerLeave(roomCode, playerId) {
   const room = quizRooms[roomCode];
   if (!room) return;
   const player = room.players[playerId];
   if (player && player.leaveTimer) clearTimeout(player.leaveTimer);
+  if (room.host === playerId) {
+    if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
+    io.to(roomCode).emit("quiz:roomClosed");
+    delete quizRooms[roomCode];
+    persistQuizRooms();
+    return;
+  }
   delete room.players[playerId];
   if (Object.keys(room.players).length === 0) {
     if (room.timeoutHandle) clearTimeout(room.timeoutHandle);
     delete quizRooms[roomCode];
+    persistQuizRooms();
     return;
   }
-  if (room.host === playerId) room.host = Object.keys(room.players)[0];
+  persistQuizRooms();
   quizPlayersUpdate(roomCode);
   if (room.phase === "playing") quizCheckAllSubmitted(roomCode);
 }
@@ -857,6 +936,7 @@ io.on("connection", (socket) => {
       endsAt: room.endsAt,
       questions: quizSanitizedQuestions(room),
     });
+    persistQuizRooms();
   });
 
   socket.on("quiz:submit", ({ answers } = {}) => {
@@ -872,6 +952,7 @@ io.on("connection", (socket) => {
       0
     );
     player.submittedAt = Date.now();
+    persistQuizRooms();
     const participants = quizParticipants(room);
     io.to(roomCode).emit("quiz:submitProgress", {
       submitted: participants.filter((p) => p.submittedAt !== null).length,
@@ -900,6 +981,7 @@ io.on("connection", (socket) => {
       p.submittedAt = null;
       p.score = 0;
     }
+    persistQuizRooms();
     io.to(roomCode).emit("quiz:backToLobby");
     quizPlayersUpdate(roomCode);
   });
@@ -911,18 +993,6 @@ io.on("connection", (socket) => {
     socket.data.quizPlayerId = null;
     if (!roomCode || !playerId) return;
     quizFinalizePlayerLeave(roomCode, playerId);
-  });
-
-  socket.on("disconnect", () => {
-    const roomCode = socket.data.quizRoomCode;
-    const playerId = socket.data.quizPlayerId;
-    const room = quizRooms[roomCode];
-    const player = room && playerId && room.players[playerId];
-    if (!player) return;
-    // 提出済み、または結果発表済みの参加者は、切断してももう待つ必要がないので退出させない
-    // （提出直後にアプリをバックグラウンド化して20秒以上経つと結果が見られなくなる不具合の修正）
-    if (player.submittedAt !== null || room.phase === "finished") return;
-    player.leaveTimer = setTimeout(() => quizFinalizePlayerLeave(roomCode, playerId), QUIZ_RECONNECT_GRACE_MS);
   });
 
   function quizJoin(sock, roomCode, name, cb) {
@@ -939,6 +1009,7 @@ io.on("connection", (socket) => {
       leaveTimer: null,
     };
     if (!room.host) room.host = id;
+    persistQuizRooms();
     const seriesNames = WORDTESTS[room.category].series.map((s) => s.name);
     cb({
       roomCode,
@@ -951,6 +1022,12 @@ io.on("connection", (socket) => {
     quizPlayersUpdate(roomCode);
   }
 });
+
+for (const [roomCode, room] of Object.entries(quizRooms)) {
+  if (room.phase !== "playing") continue;
+  const remainingMs = room.endsAt - Date.now();
+  room.timeoutHandle = setTimeout(() => quizForceFinish(roomCode), Math.max(0, remainingMs));
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
