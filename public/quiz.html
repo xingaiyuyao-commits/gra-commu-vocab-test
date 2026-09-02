@@ -379,6 +379,7 @@
         </div>
       </div>
       <div id="join-section" hidden>
+        <label for="room">ルームコード</label>
         <input id="room" maxlength="6" placeholder="例: AB3K9P" style="text-transform: uppercase; display:none;" aria-describedby="entry-error" disabled />
         <button id="btn-join" class="secondary">URLから参加</button>
       </div>
@@ -807,18 +808,44 @@
 
   // --- 参加/作成 ---
   const entryMode = new URLSearchParams(location.search).get("mode");
+  const presetRoom = new URLSearchParams(location.search).get("room");
+  const joinSection = $("join-section");
+  const createSection = $("create-section");
   const roomInput = $("room");
-  const roomLabel = roomInput && roomInput.parentElement ? roomInput.parentElement.querySelector("label") : null;
+  const roomLabel = document.querySelector('label[for="room"]');
+  const joinBtn = $("btn-join");
   if (entryMode === "create") {
-    const joinSection = $("join-section");
     if (joinSection) joinSection.style.display = "none";
     document.querySelector(".container")?.classList.add("wide");
-  } else if (entryMode === "join") {
-    const createSection = $("create-section");
+  } else if (entryMode === "join" || presetRoom) {
     if (createSection) createSection.style.display = "none";
+    if (joinSection) {
+      joinSection.hidden = false;
+      joinSection.style.display = "";
+    }
     if (roomLabel) roomLabel.style.marginTop = "0";
-    const joinBtn = $("btn-join");
-    if (joinBtn) joinBtn.classList.remove("secondary");
+    if (joinBtn) {
+      joinBtn.classList.remove("secondary");
+      joinBtn.disabled = false;
+      joinBtn.textContent = "参加する";
+    }
+    if (presetRoom) {
+      if (roomInput) {
+        roomInput.value = presetRoom.trim().toUpperCase().slice(0, 6);
+        roomInput.disabled = true;
+        roomInput.setAttribute("aria-hidden", "true");
+        roomInput.style.display = "none";
+      }
+      if (roomLabel) roomLabel.hidden = true;
+      $("name")?.focus();
+    } else {
+      if (roomInput) {
+        roomInput.disabled = false;
+        roomInput.removeAttribute("aria-hidden");
+        roomInput.style.display = "";
+      }
+      if (roomLabel) roomLabel.hidden = false;
+    }
   }
 
   function showCourseLabel(category) {
@@ -837,31 +864,6 @@
     socket.emit("quiz:roomInfo", { roomCode: presetRoom }, (res) => {
       if (res?.category) showCourseLabel(res.category);
     });
-  }
-
-  // 参加用リンク（?room=AB3K9P）で開かれたときは、コードを手で打たせない（URL-only join）
-  const presetRoom = new URLSearchParams(location.search).get("room");
-  if (presetRoom) {
-    if (roomInput) roomInput.value = presetRoom.toUpperCase().slice(0, 6);
-    // If opened via join URL with room param, hide the manual join-section so participants don't see code input.
-    if (entryMode !== "create") {
-      const createSection = $("create-section");
-      if (createSection) createSection.style.display = "none";
-      // hide the join-section entirely (keep hidden input for existing JS)
-      const joinSec = $("join-section");
-      if (joinSec) joinSec.style.display = "none";
-      // ensure btn-join appears as primary for keyboard users
-      const joinBtn = $("btn-join");
-      if (joinBtn) joinBtn.classList.remove("secondary");
-      const nameInput = $("name");
-      if (nameInput) nameInput.focus();
-    }
-    // also disable the room input to avoid edits
-    if (roomInput) {
-      roomInput.disabled = true;
-      roomInput.setAttribute('aria-hidden', 'true');
-      roomInput.style.display = 'none';
-    }
   }
 
   showCourseLabelIfNeeded();
@@ -886,7 +888,7 @@
     const name = $("name").value.trim();
     if (!name) return ($("entry-error").textContent = "名前を入力してください");
     $("entry-error").textContent = "";
-    const roomCode = (typeof presetRoom !== "undefined" && presetRoom) ? presetRoom.toUpperCase().slice(0,6) : ($("room") ? $("room").value : "");
+    const roomCode = String(presetRoom || roomInput?.value || "").trim().toUpperCase().slice(0, 6);
     socket.emit("quiz:joinRoom", { roomCode, name }, onEntered);
   });
 

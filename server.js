@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { randomBytes, timingSafeEqual } = require("crypto");
 const { Server } = require("socket.io");
 const QUESTIONS = require("./questions");
 const SENTENCES = require("./sentences");
@@ -627,6 +628,24 @@ function makeQuizRoomCode() {
   return quizRooms[code] ? makeQuizRoomCode() : code;
 }
 
+function makeQuizSessionToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+function makeQuizPlayerId(room) {
+  let id;
+  do id = `p_${randomBytes(16).toString("hex")}`;
+  while (room.players[id]);
+  return id;
+}
+
+function quizSessionTokenMatches(expected, provided) {
+  if (typeof expected !== "string" || typeof provided !== "string") return false;
+  const expectedBytes = Buffer.from(expected);
+  const providedBytes = Buffer.from(provided);
+  return expectedBytes.length === providedBytes.length && timingSafeEqual(expectedBytes, providedBytes);
+}
+
 function quizPublicPlayers(room) {
   return Object.entries(room.players).map(([id, p]) => ({
     id,
@@ -744,7 +763,7 @@ function quizFinalizePlayerLeave(roomCode, playerId) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("quiz:createRoom", ({ category, name, playerId } = {}, cb = () => {}) => {
+  socket.on("quiz:createRoom", ({ category, name } = {}, cb = () => {}) => {
     if (!QUIZ_CATEGORIES.includes(category)) return cb({ error: "カテゴリが不正です" });
     const roomCode = makeQuizRoomCode();
     quizRooms[roomCode] = {
@@ -756,7 +775,7 @@ io.on("connection", (socket) => {
       startedAt: 0,
       results: null,
     };
-    quizJoin(socket, roomCode, name, playerId, cb);
+    quizJoin(socket, roomCode, name, cb);
   });
 
   socket.on("quiz:roomInfo", ({ roomCode } = {}, cb = () => {}) => {
@@ -766,20 +785,20 @@ io.on("connection", (socket) => {
     cb({ category: room.category });
   });
 
-  socket.on("quiz:joinRoom", ({ roomCode, name, playerId } = {}, cb = () => {}) => {
+  socket.on("quiz:joinRoom", ({ roomCode, name } = {}, cb = () => {}) => {
     const code = String(roomCode || "").toUpperCase().trim();
     const room = quizRooms[code];
     if (!room) return cb({ error: "ルームが見つかりません" });
     if (room.phase !== "lobby") return cb({ error: "テストはすでに開始しています" });
-    quizJoin(socket, code, name, playerId, cb);
+    quizJoin(socket, code, name, cb);
   });
 
   // リロード・再接続で同じplayerIdが戻ってきたら、進行中の状態のまま復帰させる
-  socket.on("quiz:rejoin", ({ roomCode, playerId } = {}, cb = () => {}) => {
+  socket.on("quiz:rejoin", ({ roomCode, playerId, sessionToken } = {}, cb = () => {}) => {
     const code = String(roomCode || "").toUpperCase().trim();
     const room = quizRooms[code];
     const player = room && playerId && room.players[playerId];
-    if (!room || !player) return cb({ ok: false });
+    if (!room || !player || !quizSessionTokenMatches(player.sessionToken, sessionToken)) return cb({ ok: false });
 
     if (player.leaveTimer) {
       clearTimeout(player.leaveTimer);
@@ -906,21 +925,29 @@ io.on("connection", (socket) => {
     player.leaveTimer = setTimeout(() => quizFinalizePlayerLeave(roomCode, playerId), QUIZ_RECONNECT_GRACE_MS);
   });
 
-  function quizJoin(sock, roomCode, name, playerId, cb) {
+  function quizJoin(sock, roomCode, name, cb) {
     const room = quizRooms[roomCode];
-    const id = String(playerId || "").trim() || `p_${Math.random().toString(36).slice(2, 10)}`;
+    const id = makeQuizPlayerId(room);
     sock.join(roomCode);
     sock.data.quizRoomCode = roomCode;
     sock.data.quizPlayerId = id;
     room.players[id] = {
       name: String(name || "名無し").slice(0, 12),
+      sessionToken: makeQuizSessionToken(),
       submittedAt: null,
       score: 0,
       leaveTimer: null,
     };
     if (!room.host) room.host = id;
     const seriesNames = WORDTESTS[room.category].series.map((s) => s.name);
-    cb({ roomCode, isHost: room.host === id, category: room.category, playerId: id, seriesNames });
+    cb({
+      roomCode,
+      isHost: room.host === id,
+      category: room.category,
+      playerId: id,
+      sessionToken: room.players[id].sessionToken,
+      seriesNames,
+    });
     quizPlayersUpdate(roomCode);
   }
 });

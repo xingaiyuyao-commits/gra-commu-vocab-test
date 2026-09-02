@@ -19,6 +19,12 @@ function setValue(window, el, value) {
   el.dispatchEvent(new window.Event("input", { bubbles: true }));
 }
 
+function assertVisible(element, message) {
+  assert.ok(element, `${message}: element exists`);
+  assert.equal(element.hidden, false, `${message}: hidden属性がない`);
+  assert.notEqual(element.style.display, "none", `${message}: display:noneではない`);
+}
+
 test("参加・作成画面: 名前入力のラベル文言が仕様通り", () => {
   const { document } = loadQuizPage();
   assert.equal(document.querySelector('label[for="name"]').textContent, "名前");
@@ -40,6 +46,122 @@ test("参加・作成画面: エラーにrole=alert、入力欄がエラーと�
   assert.equal(error.getAttribute("role"), "alert");
   assert.equal(document.getElementById("name").getAttribute("aria-describedby"), "entry-error");
   assert.equal(document.getElementById("room").getAttribute("aria-describedby"), "entry-error");
+});
+
+test("参加画面: 手入力ルートではルームコード欄と参加ボタンが表示・有効化され、入力を大文字で送信する", () => {
+  const { window, document, emitted } = loadQuizPage({ url: "http://localhost/quiz.html?mode=join" });
+  const joinSection = document.getElementById("join-section");
+  const roomLabel = document.querySelector('label[for="room"]');
+  const roomInput = document.getElementById("room");
+  const joinButton = document.getElementById("btn-join");
+
+  assertVisible(joinSection, "参加欄");
+  assertVisible(roomLabel, "ルームコードのラベル");
+  assert.equal(roomLabel.textContent.trim(), "ルームコード");
+  assertVisible(roomInput, "ルームコード入力欄");
+  assert.equal(roomInput.disabled, false);
+  assertVisible(joinButton, "参加ボタン");
+  assert.equal(joinButton.disabled, false);
+  assert.equal(joinButton.textContent.trim(), "参加する");
+  assert.equal(joinButton.classList.contains("secondary"), false, "参加ボタンはprimary表示");
+
+  setValue(window, document.getElementById("name"), " 参加者 ");
+  setValue(window, roomInput, "ab3k9p");
+  joinButton.dispatchEvent(new window.Event("click", { bubbles: true }));
+
+  const joinCalls = emitted.filter((entry) => entry.event === "quiz:joinRoom");
+  assert.equal(joinCalls.length, 1);
+  assert.equal(joinCalls[0].payload.roomCode, "AB3K9P");
+  assert.equal(joinCalls[0].payload.name, "参加者");
+});
+
+test("参加画面: 名前が空ならエラーを表示し、ルーム参加を送信しない", () => {
+  const { window, document, emitted } = loadQuizPage({ url: "http://localhost/quiz.html?mode=join" });
+  setValue(window, document.getElementById("room"), "AB3K9P");
+
+  document.getElementById("btn-join").dispatchEvent(new window.Event("click", { bubbles: true }));
+
+  assert.equal(document.getElementById("entry-error").textContent, "名前を入力してください");
+  assert.equal(emitted.some((entry) => entry.event === "quiz:joinRoom"), false);
+});
+
+test("参加画面: 空のルームコードはサーバーへ送り、応答エラーをentry-errorに表示する", () => {
+  const { window, document, emitted } = loadQuizPage({ url: "http://localhost/quiz.html?mode=join" });
+  setValue(window, document.getElementById("name"), "参加者");
+
+  document.getElementById("btn-join").dispatchEvent(new window.Event("click", { bubbles: true }));
+
+  const joinCall = emitted.find((entry) => entry.event === "quiz:joinRoom");
+  assert.ok(joinCall, "空コードもサーバー側の検証へ送る");
+  assert.equal(joinCall.payload.roomCode, "");
+  assert.equal(joinCall.payload.name, "参加者");
+  joinCall.cb({ error: "ルームが見つかりません" });
+  assert.equal(document.getElementById("entry-error").textContent, "ルームが見つかりません");
+});
+
+test("参加画面: コース付き参加リンクではコード欄だけを隠し、名前の後の参加ボタンから参加できる", () => {
+  const { window, document, emitted } = loadQuizPage({
+    url: "http://localhost/quiz.html?room=ab3k9p&cat=clacel",
+  });
+  const joinSection = document.getElementById("join-section");
+  const roomLabel = document.querySelector('label[for="room"]');
+  const roomInput = document.getElementById("room");
+  const joinButton = document.getElementById("btn-join");
+  const courseLabel = document.getElementById("join-course-label");
+  const nameInput = document.getElementById("name");
+
+  assertVisible(joinSection, "参加欄");
+  assert.equal(roomInput.disabled, true);
+  assert.equal(roomInput.style.display, "none");
+  assert.equal(roomLabel.hidden, true);
+  assertVisible(joinButton, "参加ボタン");
+  assert.equal(joinButton.disabled, false);
+  assert.equal(joinButton.textContent.trim(), "参加する");
+  assert.equal(joinButton.classList.contains("secondary"), false, "参加ボタンはprimary表示");
+  assertVisible(courseLabel, "コース名");
+  assert.equal(document.getElementById("join-course-name").textContent, "Clacelコース");
+  assert.ok(
+    courseLabel.compareDocumentPosition(nameInput) & window.Node.DOCUMENT_POSITION_FOLLOWING,
+    "コース名は名前入力より上にある",
+  );
+
+  setValue(window, nameInput, "参加者A");
+  joinButton.dispatchEvent(new window.Event("click", { bubbles: true }));
+  const joinCall = emitted.find((entry) => entry.event === "quiz:joinRoom");
+  assert.equal(joinCall.payload.roomCode, "AB3K9P");
+  assert.equal(joinCall.payload.name, "参加者A");
+});
+
+test("参加画面: 旧参加リンクでも参加ボタンを表示し、ルーム情報のコース名を名前より上に表示する", () => {
+  const { window, document, emitted } = loadQuizPage({ url: "http://localhost/quiz.html?room=wxyz" });
+  const roomInfoCall = emitted.find((entry) => entry.event === "quiz:roomInfo");
+  assert.ok(roomInfoCall, "旧リンクではルーム情報を問い合わせる");
+  roomInfoCall.cb({ category: "toeic" });
+
+  const joinSection = document.getElementById("join-section");
+  const roomInput = document.getElementById("room");
+  const joinButton = document.getElementById("btn-join");
+  const courseLabel = document.getElementById("join-course-label");
+  const nameInput = document.getElementById("name");
+
+  assertVisible(joinSection, "参加欄");
+  assert.equal(roomInput.disabled, true);
+  assert.equal(roomInput.style.display, "none");
+  assertVisible(joinButton, "参加ボタン");
+  assert.equal(joinButton.disabled, false);
+  assert.equal(joinButton.textContent.trim(), "参加する");
+  assertVisible(courseLabel, "コース名");
+  assert.equal(document.getElementById("join-course-name").textContent, "TOEICコース");
+  assert.ok(
+    courseLabel.compareDocumentPosition(nameInput) & window.Node.DOCUMENT_POSITION_FOLLOWING,
+    "コース名は名前入力より上にある",
+  );
+
+  setValue(window, nameInput, "参加者B");
+  joinButton.dispatchEvent(new window.Event("click", { bubbles: true }));
+  const joinCall = emitted.find((entry) => entry.event === "quiz:joinRoom");
+  assert.equal(joinCall.payload.roomCode, "WXYZ");
+  assert.equal(joinCall.payload.name, "参加者B");
 });
 
 test("参加・作成画面: 名前を入力せずに作成ボタンを押すとエラーが出て、ルーム作成は行われない", () => {
