@@ -1159,8 +1159,8 @@
     socket.emit("quiz:selectSeries", { seriesIndex: Number($("sel-series").value) });
   });
 
-  socket.on("quiz:playersUpdate", ({ hostName, isHost: nextIsHost, players, nextSeries }) => {
-    isHost = Boolean(nextIsHost);
+  socket.on("quiz:playersUpdate", ({ hostId, hostName, players, nextSeries }) => {
+    isHost = hostId === playerId;
     $("host-controls").style.display = isHost ? "" : "none";
     $("wait-host").style.display = isHost ? "none" : "";
     $("host-name").textContent = hostName;

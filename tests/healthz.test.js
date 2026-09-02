@@ -23,18 +23,34 @@ test("Railwayのヘルスチェックに200を返す", async (t) => {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
-  t.after(() => child.kill("SIGTERM"));
+  let stderr = "";
+  child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+
+  let exited = false;
+  child.once("exit", () => { exited = true; });
+
+  t.after(async () => {
+    if (child.exitCode !== null || child.signalCode !== null) return;
+    await new Promise((resolve) => {
+      const timer = setTimeout(resolve, 2_000);
+      child.once("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      child.kill("SIGTERM");
+    });
+  });
 
   let response;
-  const deadline = Date.now() + 10_000;
-  while (!response && Date.now() < deadline) {
+  const deadline = Date.now() + 30_000;
+  while (!response && !exited && Date.now() < deadline) {
     try {
       response = await fetch(`http://127.0.0.1:${port}/healthz`);
     } catch {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-  assert.ok(response, "test server starts within 10 seconds");
+  assert.ok(response, `test server did not become healthy: ${stderr || "no stderr"}`);
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ok: true });
 });

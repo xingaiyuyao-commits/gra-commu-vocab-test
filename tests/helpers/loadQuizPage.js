@@ -80,6 +80,10 @@ function loadQuizPage({ url = "http://localhost/quiz.html" } = {}) {
     fakeSocket: fakeSockets[0],
     fakeSockets,
     fireSocketEvent,
+    close() {
+      for (const socket of fakeSockets) socket.disconnect();
+      dom.window.close();
+    },
   };
 }
 
