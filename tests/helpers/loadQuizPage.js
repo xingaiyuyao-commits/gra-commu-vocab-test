@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { JSDOM } = require("jsdom");
+const { JSDOM, VirtualConsole } = require("jsdom");
 
 // quiz.html を jsdom 上で実際に実行し、socket.io をスタブに差し替えてテストできるようにするヘルパー。
 // 本番の <script src="..."> はネットワーク越しに取得できないため、内容をインライン展開してから読み込む。
@@ -54,10 +54,12 @@ function loadQuizPage({ url = "http://localhost/quiz.html" } = {}) {
     return fakeSocket;
   }
 
+  const virtualConsole = new VirtualConsole().forwardTo(console, { jsdomErrors: ["unhandled-exception"] });
   const dom = new JSDOM(html, {
     url,
     runScripts: "dangerously",
     pretendToBeVisual: true,
+    virtualConsole,
     beforeParse(window) {
       window.io = () => createFakeSocket();
       // quiz.htmlはタイマー表示のため実際のsetIntervalを使うが、

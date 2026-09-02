@@ -132,6 +132,52 @@ test("参加画面: コース付き参加リンクではコード欄だけを隠
   assert.equal(joinCall.payload.name, "参加者A");
 });
 
+test("参加者の復帰情報はタブを閉じても残り、ルーム終了通知で削除される", () => {
+  const { window, document, emitted, fireSocketEvent } = loadQuizPage({
+    url: "http://localhost/quiz.html?room=ab3k9p&cat=clacel",
+  });
+  window.location.assign = () => {};
+  setValue(window, document.getElementById("name"), "参加者A");
+  document.getElementById("btn-join").dispatchEvent(new window.Event("click", { bubbles: true }));
+  const joinCall = emitted.find((entry) => entry.event === "quiz:joinRoom");
+  joinCall.cb({
+    roomCode: "AB3K9P",
+    category: "clacel",
+    playerId: "participant-id",
+    sessionToken: "participant-token",
+    seriesNames: ["Day 1"],
+  });
+
+  assert.deepEqual(
+    JSON.parse(window.localStorage.getItem("quizSession")),
+    { roomCode: "AB3K9P", category: "clacel", playerId: "participant-id", sessionToken: "participant-token" },
+  );
+  assert.equal(window.sessionStorage.getItem("quizSession"), null);
+
+  fireSocketEvent("quiz:roomClosed");
+  assert.equal(window.localStorage.getItem("quizSession"), null);
+});
+
+test("運営者は各コースのルームを明示的に終了できる", () => {
+  const { window, document, fakeSockets } = loadQuizPage({ url: "http://localhost/quiz.html?mode=create" });
+  window.confirm = () => true;
+  setValue(window, document.getElementById("name"), "ホスト");
+  document.getElementById("mh-clacel-create").dispatchEvent(new window.Event("click", { bubbles: true }));
+  const hostSocket = fakeSockets[1];
+  const createCall = hostSocket.emitted.find((entry) => entry.event === "quiz:createRoom");
+  createCall.cb({
+    roomCode: "ABCD",
+    category: "clacel",
+    playerId: "host-id",
+    sessionToken: "host-token",
+    seriesNames: ["Day 1"],
+  });
+
+  document.getElementById("mh-clacel-close").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(hostSocket.emitted.some((entry) => entry.event === "quiz:leave"), true);
+  assert.deepEqual(JSON.parse(window.localStorage.getItem("quizHostRooms") || "{}"), {});
+});
+
 test("参加画面: 旧参加リンクでも参加ボタンを表示し、ルーム情報のコース名を名前より上に表示する", () => {
   const { window, document, emitted } = loadQuizPage({ url: "http://localhost/quiz.html?room=wxyz" });
   const roomInfoCall = emitted.find((entry) => entry.event === "quiz:roomInfo");
@@ -370,7 +416,7 @@ test("テスト画面: 例文の日本語訳がない設問では空欄になる
 test("待機画面: ルーム作成者には結果発表ボタンが表示されるが、全員提出が揃うまでは押せない", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
   // playerIdはloadQuizPage内でランダム生成されるため、hostIdを実際のplayerIdに合わせて送る
-  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -392,7 +438,7 @@ test("待機画面: ホスト以外には結果発表ボタンが表示されな
 
 test("待機画面: 全員提出が揃うとquiz:readyToRevealでボタンが押せるようになる", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
-  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -406,7 +452,7 @@ test("待機画面: 全員提出が揃うとquiz:readyToRevealでボタンが押
 
 test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信される（制限時間終了だけでは自動発表しない）", () => {
   const { window, document, fireSocketEvent, emitted } = loadQuizPage();
-  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -427,7 +473,7 @@ test("待機画面: 結果発表ボタンを押すとquiz:revealResultsが送信
 
 test("開始: ホストは回答画面を経由せず、開始と同時に提出待ち画面（結果発表ボタンつき）が表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
-  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",
@@ -533,7 +579,7 @@ test("結果画面: どのコース・Dayだったかが表示される", () => 
 
 test("結果画面: ホストは進行役なので自分の点数・正答率・コメント・答え合わせは表示せず、満点者だけ表示される", () => {
   const { window, document, fireSocketEvent } = loadQuizPage();
-  const actualPlayerId = window.sessionStorage.getItem("quizPlayerId");
+  const actualPlayerId = window.localStorage.getItem("quizPlayerId");
   fireSocketEvent("quiz:playersUpdate", {
     hostId: actualPlayerId,
     hostName: "Tina",

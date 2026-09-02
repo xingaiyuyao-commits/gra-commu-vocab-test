@@ -313,6 +313,7 @@
             <ul class="rank-list" id="mh-clacel-mistakes"></ul>
             <button id="mh-clacel-again" class="secondary">もう一度（ロビーに戻る）</button>
           </div>
+          <button id="mh-clacel-close" class="secondary" hidden>Clacelのルームを終了</button>
         </div>
         <div class="mh-panel" id="mh-toeic">
           <div class="mh-panel-head">TOEIC</div>
@@ -344,6 +345,7 @@
             <ul class="rank-list" id="mh-toeic-mistakes"></ul>
             <button id="mh-toeic-again" class="secondary">もう一度（ロビーに戻る）</button>
           </div>
+          <button id="mh-toeic-close" class="secondary" hidden>TOEICのルームを終了</button>
         </div>
         <div class="mh-panel" id="mh-ielts">
           <div class="mh-panel-head">IELTS</div>
@@ -375,6 +377,7 @@
             <ul class="rank-list" id="mh-ielts-mistakes"></ul>
             <button id="mh-ielts-again" class="secondary">もう一度（ロビーに戻る）</button>
           </div>
+          <button id="mh-ielts-close" class="secondary" hidden>IELTSのルームを終了</button>
         </div>
         </div>
       </div>
@@ -566,10 +569,10 @@
   }
 
   function getPlayerId() {
-    let id = sessionStorage.getItem("quizPlayerId");
+    let id = localStorage.getItem("quizPlayerId");
     if (!id) {
       id = crypto.randomUUID ? crypto.randomUUID() : `p_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      sessionStorage.setItem("quizPlayerId", id);
+      localStorage.setItem("quizPlayerId", id);
     }
     return id;
   }
@@ -610,21 +613,21 @@
 
   function saveSession(roomCode, category, id, sessionToken) {
     playerId = id;
-    sessionStorage.setItem("quizPlayerId", id);
-    sessionStorage.setItem("quizSession", JSON.stringify({ roomCode, category, playerId: id, sessionToken }));
+    localStorage.setItem("quizPlayerId", id);
+    localStorage.setItem("quizSession", JSON.stringify({ roomCode, category, playerId: id, sessionToken }));
   }
   function clearSession() {
-    sessionStorage.removeItem("quizSession");
-    sessionStorage.removeItem("quizAnswers");
-    sessionStorage.removeItem("quizPendingSubmission");
+    localStorage.removeItem("quizSession");
+    localStorage.removeItem("quizAnswers");
+    localStorage.removeItem("quizPendingSubmission");
     currentRoomCode = null;
   }
   function persistAnswers() {
-    if (currentRoomCode) sessionStorage.setItem("quizAnswers", JSON.stringify({ roomCode: currentRoomCode, answers, idx }));
+    if (currentRoomCode) localStorage.setItem("quizAnswers", JSON.stringify({ roomCode: currentRoomCode, answers, idx }));
   }
   function loadSavedAnswers(roomCode, length) {
     try {
-      const saved = JSON.parse(sessionStorage.getItem("quizAnswers") || "null");
+      const saved = JSON.parse(localStorage.getItem("quizAnswers") || "null");
       if (saved && saved.roomCode === roomCode && Array.isArray(saved.answers) && saved.answers.length === length) {
         return { answers: saved.answers, idx: Math.min(Math.max(saved.idx || 0, 0), length - 1) };
       }
@@ -633,16 +636,16 @@
   }
   function loadPendingSubmission() {
     try {
-      const pending = JSON.parse(sessionStorage.getItem("quizPendingSubmission") || "null");
+      const pending = JSON.parse(localStorage.getItem("quizPendingSubmission") || "null");
       if (pending && pending.roomCode === currentRoomCode && Array.isArray(pending.answers)) return pending;
     } catch {}
     return null;
   }
   function savePendingSubmission() {
-    if (currentRoomCode) sessionStorage.setItem("quizPendingSubmission", JSON.stringify({ roomCode: currentRoomCode, answers }));
+    if (currentRoomCode) localStorage.setItem("quizPendingSubmission", JSON.stringify({ roomCode: currentRoomCode, answers }));
   }
   function clearPendingSubmission() {
-    sessionStorage.removeItem("quizPendingSubmission");
+    localStorage.removeItem("quizPendingSubmission");
   }
   function leaveRoom(needConfirm) {
     if (needConfirm && !confirm("テストの途中ですが退出しますか？")) return;
@@ -803,7 +806,7 @@
   // 復帰セッションがある場合はattemptRejoin()の応答が来るまで何も表示しない
   // （先にentry画面を出してしまうと、リロード直後に一瞬前の画面が見えてしまうため）
   let savedSession;
-  try { savedSession = JSON.parse(sessionStorage.getItem("quizSession") || "null"); } catch { savedSession = null; }
+  try { savedSession = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { savedSession = null; }
   if (!savedSession || !savedSession.roomCode) show("screen-entry");
 
   // --- 参加/作成 ---
@@ -902,7 +905,7 @@
 
   function mhSavedRooms() {
     try {
-      const saved = JSON.parse(sessionStorage.getItem(MH_SESSION_KEY) || "{}");
+      const saved = JSON.parse(localStorage.getItem(MH_SESSION_KEY) || "{}");
       return saved && typeof saved === "object" ? saved : {};
     } catch { return {}; }
   }
@@ -910,13 +913,13 @@
   function mhSaveRoom(category, roomCode, id, sessionToken) {
     const saved = mhSavedRooms();
     saved[category] = { roomCode, playerId: id, sessionToken };
-    sessionStorage.setItem(MH_SESSION_KEY, JSON.stringify(saved));
+    localStorage.setItem(MH_SESSION_KEY, JSON.stringify(saved));
   }
 
   function mhForgetRoom(category) {
     const saved = mhSavedRooms();
     delete saved[category];
-    sessionStorage.setItem(MH_SESSION_KEY, JSON.stringify(saved));
+    localStorage.setItem(MH_SESSION_KEY, JSON.stringify(saved));
   }
 
   function mhFormatTimer(endsAt) {
@@ -949,6 +952,7 @@
       $(`mh-${category}-${p}`).hidden = p !== phase;
     });
     $(`mh-${category}-create`).hidden = phase !== "idle";
+    $(`mh-${category}-close`).hidden = phase === "idle";
   }
 
   function mhRenderPlayers(category, players) {
@@ -1019,6 +1023,12 @@
     s.on("quiz:backToLobby", ({ cancelled } = {}) => {
       if (cancelled) $(`mh-${category}-error`).textContent = "テストを中止しました。問題セットを選び直して開始できます。";
       mhShow(category, "lobby");
+    });
+    s.on("quiz:roomClosed", () => {
+      mhForgetRoom(category);
+      mh[category].roomCode = null;
+      mhShow(category, "idle");
+      $(`mh-${category}-error`).textContent = "ルームを終了しました。";
     });
     s.on("quiz:startError", ({ error }) => { $(`mh-${category}-error`).textContent = error; });
     s.on("connect", () => {
@@ -1131,6 +1141,15 @@
       if (!confirm("このテストを中止しますか？回答は採点されません。")) return;
       mh[category].socket.emit("quiz:cancelGame");
     });
+
+    $(`mh-${category}-close`).addEventListener("click", () => {
+      if (!confirm(`${CATEGORY_LABEL[category]}のルームを終了しますか？参加者も退出します。`)) return;
+      mh[category].socket?.emit("quiz:leave");
+      mhForgetRoom(category);
+      mh[category].roomCode = null;
+      mhShow(category, "idle");
+      $(`mh-${category}-error`).textContent = "ルームを終了しました。";
+    });
   }
 
   MH_CATEGORIES.forEach(mhInit);
@@ -1146,6 +1165,12 @@
 
   socket.on("quiz:kicked", () => {
     alert("このルームから外されました");
+    clearSession();
+    location.href = "/";
+  });
+
+  socket.on("quiz:roomClosed", () => {
+    alert("運営者がルームを終了しました");
     clearSession();
     location.href = "/";
   });
@@ -1475,7 +1500,7 @@
   socket.on("quiz:backToLobby", ({ cancelled } = {}) => {
     clearQuizTimer();
     clearWaitingTimer();
-    sessionStorage.removeItem("quizAnswers");
+    localStorage.removeItem("quizAnswers");
     clearPendingSubmission();
     if (cancelled) $("entry-error").textContent = "テストは中止されました。ホストの案内をお待ちください。";
     show("screen-lobby");
@@ -1486,7 +1511,7 @@
   // 部屋への再joinはこちらで明示的にやり直す必要がある（"connect"は初回接続時にも発火する）
   function attemptRejoin() {
     let session;
-    try { session = JSON.parse(sessionStorage.getItem("quizSession") || "null"); } catch { session = null; }
+    try { session = JSON.parse(localStorage.getItem("quizSession") || "null"); } catch { session = null; }
     if (!session || !session.roomCode) return;
     socket.emit("quiz:rejoin", { roomCode: session.roomCode, playerId: session.playerId, sessionToken: session.sessionToken }, (res) => {
       if (!res || !res.ok) { clearSession(); show("screen-entry"); return; }
