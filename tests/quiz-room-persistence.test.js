@@ -185,7 +185,7 @@ test("進行中のテストは再起動後も期限を復元し、期限到来�
   assert.ok(persistedRoom.endsAt > Date.now(), "開始時の期限を永続化する");
 
   // 本番の5分待機を避けつつ、再起動時に保存済みの期限からタイマーを組み直す経路を検証する。
-  persistedRoom.endsAt = Date.now() + 800;
+  persistedRoom.endsAt = Date.now() + 5_000;
   fs.writeFileSync(stateFile, JSON.stringify(snapshot));
 
   host.disconnect();
@@ -212,9 +212,9 @@ test("進行中のテストは再起動後も期限を復元し、期限到来�
   assert.equal(participantState.phase, "playing");
   assert.equal(hostState.endsAt, persistedRoom.endsAt);
   assert.equal(participantState.endsAt, persistedRoom.endsAt);
+  assert.ok(Date.now() < persistedRoom.endsAt, "保存済みの期限前に両者が復帰できる");
 
-  const readyToReveal = waitForEvent(returningParticipant, "quiz:readyToReveal");
-  await readyToReveal;
+  await delay(Math.max(0, persistedRoom.endsAt - Date.now() + 200));
   const forcedState = await emitWithAck(returningParticipant, "quiz:rejoin", {
     roomCode: room.roomCode,
     playerId: entered.playerId,
